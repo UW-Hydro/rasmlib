@@ -17,13 +17,8 @@ def main():
         pathin=args.inputp
         dayin=args.date
         pathout=args.outputp
-##        pathin='E:\\UW\\analysis_RASM\\'
-##        dayin='1999-12-29'
-##        pathout='E:\\'
         filepath=pathin+'r32RB1a.vic.h.'+dayin+'-00000.nc'
-	print(filepath)
-##        print(filepath)
-##        print(dayin)
+        print(filepath)
         print(pathout)
         if error_check(pathout,filepath):
                 return
@@ -40,9 +35,9 @@ def error_check(pathout,filepath):
                 print('the netcdf file do not exist in the directory you typed')
                 return(1)
         return
+
 def read_netcdf(filepath):
 
-##        print(filepath)
         nc=Dataset(filepath)
         return(nc)
 
@@ -57,16 +52,12 @@ def create_plot(nc,pathout,dayin):
             unit=str(rawdata.units)
             i=i+1
             lon=nc.variables['longitude'][:]
-        ##    nlon=np.ma.compressed(lon)
-        ##    lonmi=min(nlon)
-        ##    lonma=max(nlon)
             lat=nc.variables['latitude'][:]
             nlat=np.ma.compressed(lat)
             latmi=min(nlat)
-        ##    latma=max(nlat)
 
             plt.subplot(2,2,i)
-            m=Basemap(projection='nplaea',boundinglat=latmi,lon_0=160,\
+            m=Basemap(projection='nplaea',boundinglat=latmi,lon_0=160,
                       resolution='l')
             m.drawcoastlines()
             m.drawparallels(np.arange(20,91,20))
@@ -78,7 +69,7 @@ def create_plot(nc,pathout,dayin):
             cs=m.contourf(xi,yi,data)
             plt.title(varb)
             cbar=m.colorbar(cs,location='right')
-            cbar.set_label(unit) # xunhuan danwei
+            cbar.set_label(unit) # xunhuan danwei - don't use chinese comments
 
             
             
@@ -87,7 +78,6 @@ def create_plot(nc,pathout,dayin):
         plt.suptitle(titwithdate)
         figout=pathout+dayin+'.png'
         plt.savefig(figout,format='png')
-        plt.show()
         return
 
 if __name__=="__main__":
