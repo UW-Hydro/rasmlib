@@ -10,6 +10,7 @@ import os
 def main():
         parser = argparse.ArgumentParser()
         parser.add_argument("inputp", help="the directory that stores the files")
+        parser.add_argument("case", help="the case that you want such as r32RB1a")
         parser.add_argument("date", help="the date that you want such as 1999-06-26")
         parser.add_argument("outputp", help="the directory that you want to save the output picture")
         args = parser.parse_args()
@@ -17,25 +18,52 @@ def main():
         pathin=args.inputp
         dayin=args.date
         pathout=args.outputp
-
-        filepath=pathin+'r32RB1a.vic.h.'+dayin+'-00000.nc'
+        case=args.case
+        namme=case+'.vic.h.'+dayin+'-00000.nc'
+        filepath=os.path.join(pathin,namme)
         print(filepath)
         print(pathout)
         if error_check(pathout,filepath):
+                return
+        if datecheck(dayin):
+                print('the date you typed is not valid')
                 return
         nc=read_netcdf(filepath)
         create_plot(nc,pathout,dayin)
 
 
 def error_check(pathout,filepath):
-
+        try:
+            nc=Dataset(filepath)
+        except RuntimeError:
+	    print('the file does not exist in the directory you typed')
+            return(1)
         if not(os.path.isdir(pathout)):
-                print('the output directory do not exist')
-                return(1)
-        if not(os.path.exists(filepath)):
-                print('the netcdf file do not exist in the directory you typed')
-                return(1)
-        return
+            print('the output directory does not exist')
+            return(1)
+        return(0)
+
+def datecheck(date):
+    year=int(date[0:4])
+    mon=int(date[5:7])
+    dat=int(date[8:10])
+    if mon<1 or mon > 12:
+       return(1)
+    if dat>31 or dat < 1:
+       return(1)
+    if (mon-4)*(mon-6)*(mon-9)*(mon-11)==0:
+       if dat>30:
+          return(1)
+    if mon==2:
+       if dat>29:
+          return(1)
+       if dat==29:
+          if year%4 != 0:
+             return(1)
+          if year%100 == 0 and year%400 != 0:
+             return(1)
+    return(0)
+
 def read_netcdf(filepath):
 
         nc=Dataset(filepath)
@@ -76,7 +104,8 @@ def create_plot(nc,pathout,dayin):
         tit='RASM Data_'
         titwithdate=tit+dayin
         plt.suptitle(titwithdate)
-        figout=pathout+dayin+'.png'
+        outnamme=dayin+'.png'
+        figout=os.path.join(pathout,outnamme)
         plt.savefig(figout,format='png')
         return
 
