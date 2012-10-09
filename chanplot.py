@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import argparse
+import argparse, time
 from mpl_toolkits.basemap import Basemap, cm
 from netCDF4 import Dataset
 import numpy as np
@@ -23,16 +23,22 @@ def main():
         filepath=os.path.join(pathin,namme)
         print(filepath)
         print(pathout)
-        if error_check(pathout,filepath):
+        if error_check(pathout,filepath,dayin):
                 return
-        if datecheck(dayin):
-                print('the date you typed is not valid')
-                return
+#        if datecheck(dayin):
+#                print('the date you typed is not valid')
+#                return
         nc=read_netcdf(filepath)
         create_plot(nc,pathout,dayin)
 
 
-def error_check(pathout,filepath):
+def error_check(pathout,filepath,dayin):
+
+        try:
+            valid_date=time.strptime(dayin,'%Y-%m-%d')
+        except ValueError:
+            print('the date you gave is wrong')
+            return(1)
         try:
             nc=Dataset(filepath)
         except RuntimeError:
