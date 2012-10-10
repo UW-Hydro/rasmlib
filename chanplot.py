@@ -25,9 +25,7 @@ def main():
         print(pathout)
         if error_check(pathout,filepath,dayin):
                 return
-#        if datecheck(dayin):
-#                print('the date you typed is not valid')
-#                return
+
         nc=read_netcdf(filepath)
         create_plot(nc,pathout,dayin)
 
@@ -49,26 +47,6 @@ def error_check(pathout,filepath,dayin):
             return(1)
         return(0)
 
-def datecheck(date):
-    year=int(date[0:4])
-    mon=int(date[5:7])
-    dat=int(date[8:10])
-    if mon<1 or mon > 12:
-       return(1)
-    if dat>31 or dat < 1:
-       return(1)
-    if (mon-4)*(mon-6)*(mon-9)*(mon-11)==0:
-       if dat>30:
-          return(1)
-    if mon==2:
-       if dat>29:
-          return(1)
-       if dat==29:
-          if year%4 != 0:
-             return(1)
-          if year%100 == 0 and year%400 != 0:
-             return(1)
-    return(0)
 
 def read_netcdf(filepath):
 
