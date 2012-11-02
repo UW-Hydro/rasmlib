@@ -10,33 +10,37 @@ import pdb
 import os
 
 import pickle
-a=pickle.load(open('ncdata.p','rb'))
-b=pickle.load(open('vari.p','rb'))
+a=pickle.load(open('/usr1/muxiao/working_rasm/11_1/ncdata.p','rb'))
 
-def main(ncdata,vari):
+def main(ncdata):
 
-        vabs = vari['vabs']
-        units = vari['units']
-        projection = vari['projection']
-        lorange = vari['lorange']
-        larange = vari['larange']
-        colormp = vari['colormp']
-        labels = vari['labels']  
-        subtitle = vari['subtitle']
-        title = vari['title']
-        pathout = vari['pathout']
-        outnamme = vari['outnamme']
-        outformat = vari['outformat']
+        vabs = ['Precipitation','Tair','Swnet','Swq']
+        units = ['unit 1', 'unit 2', 'unit 3', 'unit 4']
+        projection = 'npstere'
+        lorange = [-80, 81, 20]
+        larange = [-180, 181, 20]
+        colormp = 'jet'
+        labels = ['label 1','label 2','label 3','label 4']
+        subtitle = 'your subtitle'
+        title = 'Your Title'
+        pathout = '/usr1/muxiao'
+        outnamme ='yourfigname'
+        outformat = 'png'
+        projection_parameters = {'projection': 'npstere', 'boundinglat': 20,\
+                                 'lon_0': -114, 'lat_ts': 80.5}
+
+
 
         print('the output directory is: '+pathout)
 
         create_plot(ncdata,vabs,units,projection,lorange,larange,colormp,\
-                    labels,subtitle,title,pathout,outnamme,outformat)
+                    labels,subtitle,title,pathout,outnamme,outformat,\
+                    projection_parameters)
 
 
 
 def create_plot(ncdata,vabs,units,projection,lorange,larange,colormp,labels,\
-                subtitle,title,pathout,outnamme,outformat):
+                subtitle,title,pathout,outnamme,outformat,projection_parameters):
         
         locs = ['left','right','left','right']
         fig = plt.figure()
@@ -58,8 +62,7 @@ def create_plot(ncdata,vabs,units,projection,lorange,larange,colormp,labels,\
             lon = ncdata['lon'][:]
             lat = ncdata['lat'][:]
 
-            m = Basemap(projection=projection,boundinglat=20,lon_0=-114,\
-                        lat_ts=80.5,resolution='i')
+            m = Basemap(**projection_parameters)
             m.drawcoastlines()
             m.drawparallels(np.arange(*lorange))
             m.drawmeridians(np.arange(*larange))
@@ -69,19 +72,18 @@ def create_plot(ncdata,vabs,units,projection,lorange,larange,colormp,labels,\
             cs = m.pcolor(xi,yi,data,cmap=cm)
             plt.title(labels[i-1])
             if i%2 == 1:
-                    cbar = m.colorbar(cs,location='left')
+                    cbar = m.colorbar(cs, location='left')
                     cbar.ax.yaxis.set_label_position('left')
                     cbar.ax.yaxis.set_ticks_position('left')
             else:
                     cbar = m.colorbar(cs,location='right')
             cbar.set_label(unit)
 
-        fig.suptitle(title,fontsize=14, fontweight='bold')
+        fig.suptitle(title, fontsize=14, fontweight='bold')
         fig.text(0.5, 0.90, subtitle, ha='center',size='medium')
         outname = outnamme+'.'+outformat
         figout = os.path.join(pathout,outname)
-        plt.show()
-        plt.savefig(figout,format=outformat)
+        plt.savefig(figout, format=outformat, dpi=200)
         return
 if __name__ == "__main__":
-        main(a,b)
+        main(a)
