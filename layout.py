@@ -9,37 +9,8 @@ from pylab import *
 import pdb
 import os
 
-import pickle
-a=pickle.load(open('/usr1/muxiao/working_rasm/11_1/ncdata.p','rb'))
 
-def main(ncdata):
-
-        vabs = ['Precipitation','Tair','Swnet','Swq']
-        units = ['unit 1', 'unit 2', 'unit 3', 'unit 4']
-        projection = 'npstere'
-        lorange = [-80, 81, 20]
-        larange = [-180, 181, 20]
-        colormp = 'jet'
-        labels = ['label 1','label 2','label 3','label 4']
-        subtitle = 'your subtitle'
-        title = 'Your Title'
-        pathout = '/usr1/muxiao'
-        outnamme ='yourfigname'
-        outformat = 'png'
-        projection_parameters = {'projection': 'npstere', 'boundinglat': 20,\
-                                 'lon_0': -114, 'lat_ts': 80.5}
-
-
-
-        print('the output directory is: '+pathout)
-
-        create_plot(ncdata,vabs,units,projection,lorange,larange,colormp,\
-                    labels,subtitle,title,pathout,outnamme,outformat,\
-                    projection_parameters)
-
-
-
-def create_plot(ncdata,vabs,units,projection,lorange,larange,colormp,labels,\
+def create_plot(ncdata,vabs,units,lorange,larange,colormp,minv,maxv,labels,\
                 subtitle,title,pathout,outnamme,outformat,projection_parameters):
         
         locs = ['left','right','left','right']
@@ -69,7 +40,7 @@ def create_plot(ncdata,vabs,units,projection,lorange,larange,colormp,labels,\
 
             xi,yi = m(lon,lat)
             cm = matplotlib.cm.get_cmap(colormp)
-            cs = m.pcolor(xi,yi,data,cmap=cm)
+            cs = m.pcolor(xi,yi,data,cmap=cm, vmin=minv, vmax=maxv)
             plt.title(labels[i-1])
             if i%2 == 1:
                     cbar = m.colorbar(cs, location='left')
@@ -85,5 +56,3 @@ def create_plot(ncdata,vabs,units,projection,lorange,larange,colormp,labels,\
         figout = os.path.join(pathout,outname)
         plt.savefig(figout, format=outformat, dpi=200)
         return
-if __name__ == "__main__":
-        main(a)
