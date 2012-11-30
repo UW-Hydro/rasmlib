@@ -5,8 +5,8 @@ import makeplot_cru
 def main():
 
       title = ['Surface air temperature']
-      vabsname = [['Tair', 'Tair', 't2m', 'tmp']]  # Nov 21
-      filename = ['Tair']                          # Nov 21
+      vabsname = [['Tair', 'Tair', 't2m', 'tmp']]  
+      filename = ['Tair']                          
 
       for i in range(0, len(title)):  
 

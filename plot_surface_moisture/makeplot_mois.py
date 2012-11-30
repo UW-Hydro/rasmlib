@@ -5,9 +5,8 @@ from layout  import create_plot
 import argparse
 import numpy.ma as ma
 import pdb
-import os
 
-def main(variname, varisavename, vabsname):
+def main(variname, varisavename, rvari, evari):
 
         args = processcml()
         ncr1 = Dataset(args.r1)
@@ -15,31 +14,22 @@ def main(variname, varisavename, vabsname):
         ncr3 = Dataset(args.r3)
         ncera = Dataset(args.era)
         timee = args.time
-        
-        if os.path.isfile(args.r1) and os.path.isfile(args.r2) and\
-           os.path.isfile(args.r3) and os.path.isfile(args.era):
-           print('\n ok')
-        else: 
-           print('\n input directory is wrong')
-           return
-        if not(os.path.exists(args.figpath)):
-           print('\n output directory is wrong')
-           return
-
 
         ncdatam = {}
         ncdatam['lon'] = ncr1.variables['longitude'][:]
         ncdatam['lat'] = ncr1.variables['latitude'][:]
-        ncdatam['r1'] = ncr1.variables[vabsname[0]][0][:]
-        ncdatam['r2'] = ncr2.variables[vabsname[1]][0][:]
-        ncdatam['r3'] = ncr3.variables[vabsname[2]][:]   # this now actually era
-        ncdatam['era'] = ncera.variables[vabsname[3]][:] # this now actually cru
-
-        if vabsname[2] == 't2m':                               # this is for different units   
-           ncdatam['r3'] = ncdatam['r3']-273.15
-        if vabsname[2] == 'tp':
-           ncdatam['r3'] = ncdatam['r3']*1000
-
+        ncdatam['r1'] = ncr1.variables[rvari][0][:]
+        ncdatam['r2'] = ncr2.variables[rvari][0][:]
+        ncdatam['r3'] = ncr3.variables[rvari][0][:]
+        ncdatam['era'] = ncera.variables[evari][:]
+        ncdatam['era'] = ncdatam['era']*1000
+        if rvari == 'Runoff':
+           ncdatam['r1'] = ncdatam['r1']+ncr1.variables['Baseflow'][0][:]
+           ncdatam['r2'] = ncdatam['r2']+ncr2.variables['Baseflow'][0][:]
+           ncdatam['r3'] = ncdatam['r3']+ncr3.variables['Baseflow'][0][:]
+        if rvari == 'Evap':
+           ncdatam['era'] = -ncdatam['era']
+ 
         ncdatad = {}
         ncdatad['lon'] = ncdatam['lon']
         ncdatad['lat'] = ncdatam['lat']
@@ -48,7 +38,7 @@ def main(variname, varisavename, vabsname):
         ncdatad['r3'] = -ncdatam['era']+ncdatam['r3']
         ncdatad['era'] = ncdatam['era']
 
-        unit = ncr1.variables[vabsname[0]].units
+        unit = ncr1.variables[rvari].units
 
 
         vabs = ['r1','r2','r3','era']
@@ -56,8 +46,8 @@ def main(variname, varisavename, vabsname):
         projection = 'npstere'
         lorange = [-80, 81, 20]
         larange = [-180, 181, 20]
-        colormp = 'jet'                
-        labels = ['VIC60','VIC70','ERA','CRU']
+        colormp = 'jet'
+        labels = ['R30RB1g','R33RBVIC60','R33RBVIC70','ERA']
         subtitle = timee
         titlem = variname+' mean'
         titled = variname+' anomaly'
@@ -68,16 +58,18 @@ def main(variname, varisavename, vabsname):
         projection_parameters = {'projection': 'npstere', 'boundinglat': 53,\
                                  'lon_0': -114, 'lat_ts': 80.5}
 
-        maxv = [ ma.MaskedArray.max(ncdatam[vab]) for vab in vabs[:3] ]
-        minv = [ ma.MaskedArray.min(ncdatam[vab]) for vab in vabs[:3] ]
-        maxm = float(sum(maxv))/len(maxv) # Nov 21
-        minm = float(sum(minv))/len(minv) # Nov 21
+        maxm = max([ma.MaskedArray.max(ncdatam[vab]) for vab in vabs[:3] ])
+        minm = min([ma.MaskedArray.min(ncdatam[vab]) for vab in vabs[:3] ])
+        mxmi = maxm - minm
+        maxd = 0.25*mxmi
+        mind = -0.25*mxmi
 
-# Nov 21        if rvari == 'Swq'  and evari == 'sd':
-# Nov 21           maxm = 300
-# Nov 21        if evari == 'sp':
-# Nov 21           maxm = 5
-           
+        if rvari == 'Runoff':
+           maxm = 6
+#        if rvari == 'Evap':
+#           maxm = 1.2
+        if rvari == 'Precipitation':
+           maxm = 8
 
         print('the output directory is: '+pathout)
 
