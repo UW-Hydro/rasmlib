@@ -38,7 +38,7 @@ plot_cbar_extend: both
 
 plot_anom: True
 anom_cmap: Jet
-anom_bounds: False
+anom_bounds: False 
 anom_cbar_extend: both
 
 pannel0_path: /nfs/hydro6/raid/nijssen/rasm/r33RBVIC60/lnd/hist/r33RBVIC60.vic.ha.1990-1999-[01-12]*.monthly.mean.nc
@@ -49,7 +49,7 @@ pannel0_lon: longitude
 pannel0_lat: latitude
 pannel0_offset: False
 pannel0_mult: False
-
+pannel0_div: False
 """
 
 from netCDF4 import Dataset
@@ -57,7 +57,9 @@ import numpy as np
 import numpy.ma as ma
 import matplotlib
 import matplotlib.pyplot as plt
-from mpl_toolkits.basemap import Basemap, cm
+from matplotlib import cm
+from mpl_toolkits.basemap import Basemap
+import mpl_toolkits.basemap.cm as GMT
 from pylab import axes
 from matplotlib import rc
 import pdb
@@ -66,7 +68,7 @@ import ConfigParser
 import argparse
 
 def main():
-    Main,Map_Options,Projection_Parameters,Plot_Dict = process_command_line()
+    Main,Map_Options,Projection_Parameters,Plot_Dict,options = process_command_line()
     
     #Loop over all plots in configuration file
     for var in Main['plots']:
@@ -79,24 +81,29 @@ def main():
             # Get data and attributes for each file and make plots
             for j in xrange(Plot_Dict[var]['plot_pannels']):
                 pannel = 'pannel'+str(j)
-                print 'reading data from', files[pannel][i]
+                if options['verbose']:
+                    print 'reading data from', files[pannel][i]
                 f = Dataset(files[pannel][i])
 
                 # get offset/multiplier from dictionary
                 if Plot_Dict[var][pannel+'_offset']:
                     offset = Plot_Dict[var][pannel+'_offset']
                 else:
-                    offset = 0
+                    offset = 0.
                 if Plot_Dict[var][pannel+'_mult']:
                     mult = Plot_Dict[var][pannel+'_mult']
                 else:
-                    mult = 1
+                    mult = 1.
+                if Plot_Dict[var][pannel+'_div']:
+                    div = Plot_Dict[var][pannel+'_div']
+                else:
+                    div = 1.                
 
                 # Get data from netcdf 
                 var_name = Plot_Dict[var][pannel+'_var']
                 lon_name = Plot_Dict[var][pannel+'_lon']
                 lat_name = Plot_Dict[var][pannel+'_lat']
-                Mdata[pannel+'_var'] = np.squeeze(f.variables[var_name][:])*mult + offset
+                Mdata[pannel+'_var'] = np.squeeze(f.variables[var_name][:])*mult/div + offset
                 Coords[pannel+'_lon'] = f.variables[lon_name][:]
                 Coords[pannel+'_lat'] = f.variables[lat_name][:]
 
@@ -123,7 +130,7 @@ def main():
             if not Plot_Dict[var]['plot_title']:
                 Plot_Dict[var]['plot_title'] = var
             if not Plot_Dict[var]['plot_title']:
-                Plot_Dict[var]['plot_cmap'] = 'jet'
+                Plot_Dict[var]['plot_cmap'] = 'cm.jet'
 
             # Get colorbar bounds from config or find from data 
             bounds = {}
@@ -137,7 +144,17 @@ def main():
                 Mbounds['vmax'] = max(Plot_Dict[var]['plot_bounds'])
             bounds['Mbounds']= Mbounds
                 
-
+            if options['dryrun']:
+                print 'dryrun was sucessful!'
+                print 'Plot_Dicts:'
+                for var in Plot_Dict:
+                    print var,Plot_Dict[var]
+                print 'Projection_Parameters:', Projection_Parameters
+                print 'Main:',Main
+                print 'Map_Options:',Map_Options
+                print 'bounds:', bounds
+                return
+            
             # Make a plot
             if Plot_Dict[var]['plot_pannels'] == 1:
                 plot1()
@@ -148,8 +165,10 @@ def main():
             elif Plot_Dict[var]['plot_pannels'] == 4:
                 subtitle = Plot_Dict[var]['plot_iterator'][i]+'-'+Plot_Dict[var]['plot_subtitle']+'-Mean'
                 outname = var+'-'+subtitle+'.'+Main['outformat']
-                plot4(Mdata,Coords,bounds,Main,Map_Options,Projection_Parameters,Plot_Dict[var],subtitle,outname)
-
+                figout = plot4(Mdata,Coords,bounds,Main,Map_Options,Projection_Parameters,Plot_Dict[var],subtitle,outname)
+                if options['verbose']:
+                    print 'done with ', figout
+                    
             # If anomalies are to be plotted, find those now
             if Plot_Dict[var]['plot_anom']:
                 Adata = Mdata
@@ -179,12 +198,12 @@ def main():
                 elif Plot_Dict[var]['plot_pannels'] == 4:
                     subtitle = Plot_Dict[var]['plot_iterator'][i]+'-'+Plot_Dict[var]['plot_subtitle']+'-Anomaly'
                     outname = var+'-'+subtitle+'.'+Main['outformat']
-                    plot4(Adata,Coords,bounds,Main,Map_Options,Projection_Parameters,Plot_Dict[var],subtitle,outname,anom=True)
+                    figout = plot4(Adata,Coords,bounds,Main,Map_Options,Projection_Parameters,Plot_Dict[var],subtitle,outname,anom=True)
+                    if options['verbose']:
+                        print 'done with ', figout
 
     return
-            
-            
- 
+
 def process_command_line():
     """
     Read configuration file, type rout.py -h
@@ -192,6 +211,9 @@ def process_command_line():
     # Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("config", type=str, help="Input Configuration File")
+    parser.add_argument("--variable", type=str, help="Limit the plots to a single variable")
+    parser.add_argument("--verbose", help="Make script verbose",action='store_true')
+    parser.add_argument("--dryrun", help="Do a dryrun without making any plots, check to make sure config file is readable and data exists",action='store_true')
     args = parser.parse_args()
     if args.config:
         configFile = args.config
@@ -201,27 +223,36 @@ def process_command_line():
     config.read(configFile)
     config.sections()
 
+    options = {}
+    options['verbose'] = args.verbose
+    options['dryrun'] = args.dryrun
+    
     # Parse Main Section
     Main = {}
-    Main['plots'] = config.get('Main','plots').split(',')
+    if args.variable:
+        Main['plots'] = [args.variable]
+    else:
+        Main['plots'] = config.get('Main','plots').split(',')
     Main['outpath'] = config.get('Main','outpath')
     Main['outformat'] = config.get('Main','outformat')
     Main['dpi'] = int(config.get('Main','dpi'))
-
+    
     # Parse Map Options
     Map_Options = {}
     Map_Options['plot_parallels'] = map(float,config.get('Map_Options','plot_parallels').split(','))
     Map_Options['plot_meridians'] = map(float,config.get('Map_Options','plot_meridians').split(','))
-
+    
     # Parse Projection Parameters
     Projection_Parameters = {}
     Projection_Parameters['projection'] = config.get('Projection_Parmaeters','projection')
     Projection_Parameters['boundinglat'] = float(config.get('Projection_Parmaeters','boundinglat'))
     Projection_Parameters['lon_0'] = float(config.get('Projection_Parmaeters','lon_0'))
     Projection_Parameters['lat_ts'] = float(config.get('Projection_Parmaeters','lat_ts'))
-
+    
     # Parse Plots
     Plot_Dict = {}
+    if options['verbose']:
+        print 'vars:', Main['plots']
     for var in Main['plots']:
         Plot_Dict[var] = {}
         Plot_Dict[var]['plot_title'] = config.get(var,'plot_title')
@@ -236,7 +267,7 @@ def process_command_line():
         try:
             Plot_Dict[var]['plot_cmap'] = config.get(var,'plot_cmap')
         except:
-            Plot_Dict[var]['plot_cmap'] = 'RdBu_r'
+            Plot_Dict[var]['plot_cmap'] = 'cm.jet'
         try:
             Plot_Dict[var]['plot_cbar_extend'] = config.get(var,'plot_cbar_extend')
         except:
@@ -288,7 +319,12 @@ def process_command_line():
                 Plot_Dict[var][pannel+'_mult'] = float(config.get(var,pannel+'_mult'))
             except:
                 Plot_Dict[var][pannel+'_mult'] = False
-    return Main,Map_Options,Projection_Parameters,Plot_Dict
+            try:
+                Plot_Dict[var][pannel+'_div'] = float(config.get(var,pannel+'_div'))
+            except:
+                Plot_Dict[var][pannel+'_div'] = False
+                
+    return Main,Map_Options,Projection_Parameters,Plot_Dict,options
 
 def get_file_lists(Plot_Dict,var):
     """
@@ -359,18 +395,22 @@ def plot4(data,coords,bounds,Main,Map_Options,Projection_Parameters,Var_Dict,sub
         xi,yi = m(coords[pannel+'_lon'], coords[pannel+'_lat'])
 
         if anom and i==3:
-            cm = matplotlib.cm.get_cmap(Var_Dict['plot_cmap'])
-            cs = m.pcolor(xi,yi, data[pannel+'_var'],cmap=cm,**bounds['Mbounds'])
+            cmap =  cmap_discretize(Var_Dict['plot_cmap'])
+            cs = m.pcolor(xi,yi, data[pannel+'_var'],cmap=cmap,**bounds['Mbounds'])
             extend = Var_Dict['plot_cbar_extend']
-        elif anom:
-            cm = matplotlib.cm.get_cmap(Var_Dict['anom_cmap'])
-            cs = m.pcolor(xi,yi, data[pannel+'_var'],cmap=cm,**bounds['Abounds'])
-            extend = Var_Dict['anom_cbar_extend']
-        else:
-            cm = matplotlib.cm.get_cmap(Var_Dict['plot_cmap'])
-            cs = m.pcolor(xi,yi, data[pannel+'_var'],cmap=cm,**bounds['Mbounds'])
-            extend = Var_Dict['plot_cbar_extend']
+            title = Var_Dict[pannel+'_label']
 
+        elif anom:
+            cmap =  cmap_discretize(Var_Dict['anom_cmap'])
+            cs = m.pcolor(xi,yi, data[pannel+'_var'],cmap=cmap,**bounds['Abounds'])
+            extend = Var_Dict['anom_cbar_extend']
+            title = Var_Dict[pannel+'_label']+' - '+Var_Dict['pannel3_label']
+        else:
+            cmap =  cmap_discretize(Var_Dict['plot_cmap'])
+            cs = m.pcolor(xi,yi, data[pannel+'_var'],cmap=cmap,**bounds['Mbounds'])
+            extend = Var_Dict['plot_cbar_extend']
+            title = Var_Dict[pannel+'_label']
+            
         if i%2 == 0:
             cbar = m.colorbar(cs, location='left',extend = extend )
             cbar.ax.yaxis.set_label_position('left')
@@ -378,16 +418,29 @@ def plot4(data,coords,bounds,Main,Map_Options,Projection_Parameters,Var_Dict,sub
         else:
             cbar = m.colorbar(cs,location='right',extend=extend)
         cbar.set_label(units)
+        for t in cbar.ax.get_yticklabels():
+            t.set_fontsize(9)
 
-        plt.title(Var_Dict[pannel+'_label'], fontsize=9)
-            
+        plt.title(title, fontsize=12)
+        
     fig.suptitle(Var_Dict['plot_title'], fontsize=14, fontweight='bold')
-    fig.text(0.5, 0.92, subtitle, ha='center',size='medium')
+    fig.text(0.5, 0.92, subtitle, ha='center',fontsize=12)
     figout = os.path.join(Main['outpath'],outname)
+    plt.savefig(figout, format=Main['outformat'], dpi=Main['dpi'],bbox_inches='tight', pad_inches=0)
+    plt.close()
+    return figout
 
-    plt.savefig(figout, format=Main['outformat'], dpi=Main['dpi'])
-    print 'done with',figout
-    return
+def cmap_discretize(cmap, N=10):
+    
+     cmap = cm.get_cmap(eval(cmap))
+     colors_i = np.concatenate((np.linspace(0, 1., N), (0.,0.,0.,0.)))
+     colors_rgba = cmap(colors_i)
+     indices = np.linspace(0, 1., N+1)
+     cdict = {}
+     for ki,key in enumerate(('red','green','blue')):
+        cdict[key] = [(indices[i], colors_rgba[i-1,ki], colors_rgba[i,ki]) for i in xrange(N+1)]
 
+     return matplotlib.colors.LinearSegmentedColormap(cmap.name + "_%d"%N, cdict, 1024)
+        
 if __name__ == "__main__":
     main()    
