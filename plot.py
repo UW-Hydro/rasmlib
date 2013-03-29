@@ -176,7 +176,10 @@ def main():
                 for j in xrange(pannels):
                     pannel = 'pannel'+str(j)
                     last = 'pannel'+str(pannels)+'_var'
-                    Adata[pannel+'_var'] -= Mdata[last]
+                    if Plot_Dict[var]['anom_type']=='absolute':
+                        Adata[pannel+'_var'] -= Mdata[last]
+                    else:
+                        Adata[pannel+'_var'] = (Adata[pannel+'_var']-Mdata[last])/Mdata[last]
 
                 Abounds = {}
                 if not Plot_Dict[var]['anom_bounds']:
@@ -285,6 +288,10 @@ def process_command_line():
                 Plot_Dict[var]['anom_cbar_extend'] = config.get(var,'anom_cbar_extend')
             except:
                 Plot_Dict[var]['anom_cbar_extend'] = 'neither'
+            try:
+                Plot_Dict[var]['anom_type'] = config.get(var,'anom_type')
+            except:
+                Plot_Dict[var]['anom_type'] = 'absolute'
         for num in xrange(int(config.get(var,'plot_pannels'))):
             pannel = 'pannel'+str(num)
             try:
