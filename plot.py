@@ -433,7 +433,7 @@ def plot4(data,coords,bounds,Main,Map_Options,Projection_Parameters,Var_Dict,sub
     fig.suptitle(Var_Dict['plot_title'], fontsize=14, fontweight='bold')
     fig.text(0.5, 0.92, subtitle, ha='center',fontsize=12)
     figout = os.path.join(Main['outpath'],outname)
-    plt.savefig(figout, format=Main['outformat'], dpi=Main['dpi'],bbox_inches='tight', pad_inches=0)
+    plt.savefig(figout, format=Main['outformat'], dpi=Main['dpi'],bbox_inches='tight', pad_inches=0.1)
     plt.close()
     return figout
 
