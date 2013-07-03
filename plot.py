@@ -179,7 +179,7 @@ def main():
                     if Plot_Dict[var]['anom_type']=='absolute':
                         Adata[pannel+'_var'] -= Mdata[last]
                     else:
-                        Adata[pannel+'_var'] = (Adata[pannel+'_var']-Mdata[last])/Mdata[last]
+                        Adata[pannel+'_var'] = (Adata[pannel+'_var']-Mdata[last])/Mdata[last]*100
 
                 Abounds = {}
                 if not Plot_Dict[var]['anom_bounds']:
@@ -193,11 +193,11 @@ def main():
                 bounds['Abounds']= Abounds
                 # Make a plot
                 if Plot_Dict[var]['plot_pannels'] == 1:
-                    plot1()
+                    figout = plot1(Adata,Coords,bounds,Main,Map_Options,Projection_Parameters,Plot_Dict[var],subtitle,outname,anom=True)
                 elif Plot_Dict[var]['plot_pannels'] == 2:
-                    plot2()
+                    figout = plot2(Adata,Coords,bounds,Main,Map_Options,Projection_Parameters,Plot_Dict[var],subtitle,outname,anom=True)
                 elif Plot_Dict[var]['plot_pannels'] == 3:
-                    plot3()
+                    figout = plot3(Adata,Coords,bounds,Main,Map_Options,Projection_Parameters,Plot_Dict[var],subtitle,outname,anom=True)
                 elif Plot_Dict[var]['plot_pannels'] == 4:
                     subtitle = Plot_Dict[var]['plot_iterator'][i]+'-'+Plot_Dict[var]['plot_subtitle']+'-Anomaly'
                     outname = var+'-'+subtitle+'.'+Main['outformat']
@@ -279,7 +279,7 @@ def process_command_line():
             try:
                 Plot_Dict[var]['anom_cmap'] = config.get(var,'anom_cmap')
             except:
-                Plot_Dict[var]['anom_cmap'] = 'Jet'
+                Plot_Dict[var]['anom_cmap'] = 'cm.RdBu_r'
             try:
                 Plot_Dict[var]['anom_bounds'] = map(float,config.get(var,'anom_bounds').split(','))
             except:
@@ -371,11 +371,65 @@ def plot2():
     """
     return
 
-def plot3():
+def plot3(data,coords,bounds,Main,Map_Options,Projection_Parameters,Var_Dict,subtitle,outname,anom=False):
     """
-    Make a 3 pannel plot
+    Make a 3 pannel  horizontal plot
     """
-    return
+    fig = plt.figure()
+    b = 0.04; c = 0;
+    b = b/3; c = 0.5*c;
+    xxs = [0.15+b, 0.33-b, 0.67-b]
+    yys = [0.125+c, 0.125+c, 0.125+c]
+    subwidth = 0.35; subheight = 0.33
+    
+    for i in xrange(3):
+        pannel = 'pannel'+str(i)
+        units = Var_Dict[pannel+'_units']
+        label = Var_Dict[pannel+'_label']
+        axes([xxs[i], yys[i], subwidth, subheight])
+        
+        m = Basemap(**Projection_Parameters)
+        m.drawcoastlines()
+        m.drawparallels(np.arange(*Map_Options['plot_parallels']))
+        m.drawmeridians(np.arange(*Map_Options['plot_meridians']))
+
+        xi,yi = m(coords[pannel+'_lon'], coords[pannel+'_lat'])
+
+        if anom and i==3:
+            cmap =  cmap_discretize(Var_Dict['plot_cmap'])
+            cs = m.pcolor(xi,yi, data[pannel+'_var'],cmap=cmap,**bounds['Mbounds'])
+            extend = Var_Dict['plot_cbar_extend']
+            title = Var_Dict[pannel+'_label']
+
+        elif anom:
+            cmap =  cmap_discretize(Var_Dict['anom_cmap'])
+            cs = m.pcolor(xi,yi, data[pannel+'_var'],cmap=cmap,**bounds['Abounds'])
+            extend = Var_Dict['anom_cbar_extend']
+            title = Var_Dict[pannel+'_label']+' - '+Var_Dict['pannel3_label']
+        else:
+            cmap =  cmap_discretize(Var_Dict['plot_cmap'])
+            cs = m.pcolor(xi,yi, data[pannel+'_var'],cmap=cmap,**bounds['Mbounds'])
+            extend = Var_Dict['plot_cbar_extend']
+            title = Var_Dict[pannel+'_label']
+            
+        if i%2 == 0:
+            cbar = m.colorbar(cs, location='left',extend = extend )
+            cbar.ax.yaxis.set_label_position('left')
+            cbar.ax.yaxis.set_ticks_position('left')
+        else:
+            cbar = m.colorbar(cs,location='right',extend=extend)
+        cbar.set_label(units)
+        for t in cbar.ax.get_yticklabels():
+            t.set_fontsize(9)
+
+        plt.title(title, fontsize=12)
+        
+    fig.suptitle(Var_Dict['plot_title'], fontsize=14, fontweight='bold')
+    fig.text(0.5, 0.92, subtitle, ha='center',fontsize=12)
+    figout = os.path.join(Main['outpath'],outname)
+    plt.savefig(figout, format=Main['outformat'], dpi=Main['dpi'],bbox_inches='tight', pad_inches=0.1)
+    plt.close()
+    return figout
 
 def plot4(data,coords,bounds,Main,Map_Options,Projection_Parameters,Var_Dict,subtitle,outname,anom=False):
     """
