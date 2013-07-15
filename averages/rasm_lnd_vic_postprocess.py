@@ -69,7 +69,7 @@ def main():
         ncap2 = '/opt/local/bin/ncap2'
         ncatted = '/opt/local/bin/ncatted'
         ncwa = '/opt/local/bin/ncwa'
-    elif args.machine=='spirit'
+    elif args.machine=='spirit':
         ncra = '/hafs_x86_64/ncra'
         ncrcat = '/hafs_x86_64/ncrcat'  
         ncap2 = '/hafs_x86_64/ncap2'
