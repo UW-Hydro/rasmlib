@@ -43,7 +43,7 @@ def main():
                         help='calendar includes leap days or not')
     parser.add_argument('--delete', action='store_true',
                         help='delete files that have been updated or merged')
-    parser.add_argument('--machine', required=True, metavar='<mac|hydro>',
+    parser.add_argument('--machine', required=True, metavar='<mac|hydro|spirit>',
                         help='computer executing script...sets nco paths')
 
     args = parser.parse_args()
@@ -69,6 +69,12 @@ def main():
         ncap2 = '/opt/local/bin/ncap2'
         ncatted = '/opt/local/bin/ncatted'
         ncwa = '/opt/local/bin/ncwa'
+    elif args.machine=='spirit'
+        ncra = '/hafs_x86_64/ncra'
+        ncrcat = '/hafs_x86_64/ncrcat'  
+        ncap2 = '/hafs_x86_64/ncap2'
+        ncatted = '/hafs_x86_64/ncatted'
+        ncwa = '/hafs_x86_64/ncwa'
     else:
         ncra = '/usr/bin/ncra'
         ncrcat = '/usr/bin/ncrcat'  
