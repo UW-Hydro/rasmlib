@@ -63,6 +63,12 @@ def main():
         sys.exit('Source path does not exist: {}'.format(args.srcdir))
     if not os.path.exists(args.destdir):
         os.makedirs(args.destdir)
+
+    if leapcal == 'noleap': 
+        dpm=[0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] # Allows 1-based indexing
+    else:
+        dpm=[0, 31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] # Allows 1-based indexing
+
     if args.machine=='mac':
         ncra = '/opt/local/bin/ncra'
         ncrcat = '/opt/local/bin/ncrcat'  
@@ -122,7 +128,7 @@ def main():
                         format(args.casename, filedate.year, filedate.month))
             newfilename = ('{0}.vic.ha.{1:04d}-{2:02d}.mean.nc'.
                            format(args.casename, newfiledate.year,newfiledate.month))
-            daysinmonth = calendar.monthrange(newfiledate.year,newfiledate.month)[1]
+            daysinmonth = dpm[newfiledate.month]
 
             if leapcal == 'noleap' and filedate.month == 3 and td == 29:
                 td = (daysinmonth-1/2.) +1.
@@ -224,25 +230,43 @@ def main():
     currentdate = firstdate
     firstmonth = currentdate
     
-    if timestep != 'monthly':
-        # monthly means
-        while currentdate <= lastdate:
-            fileglob = ('{0}.vic.ha.{1:04d}-{2:02d}-*.nc'.
-                        format(args.casename, currentdate.year, currentdate.month))
+    # monthly means
+    while currentdate <= lastdate:
+        outfile = ('{0}.vic.ha.{1:04d}-{2:02d}.mean.nc'.
+                   format(args.casename, currentdate.year, currentdate.month))
+        if timestep != 'monthly':
+            fileglob = ('{0}.vic.ha.{1:04d}-{2:02d}*nc'.
+                         format(args.casename, currentdate.year, currentdate.month))
             filelist = sorted(glob.glob(os.path.join(args.destdir, fileglob)))
-            outfile = ('{0}.vic.ha.{1:04d}-{2:02d}.mean.nc'.
-                       format(args.casename, currentdate.year, currentdate.month))
             fargs = list(flatten([ncra, '-O', filelist,
-                                  os.path.join(args.destdir, outfile)]))
+                              os.path.join(args.destdir, outfile)]))
             print '{} [...] -> {}'.format(fargs[0], fargs[-1])
             returnval = subprocess.call(fargs)
             if returnval != 0:
                 sys.exit('Error executing: {}'.format(' '.join(fargs)))
-                ndays = calendar.monthrange(currentdate.year, currentdate.month)[1]
-            lastmonth = currentdate
-            currentdate += datetime.timedelta(days = ndays)
-    else:
-        lastmonth = lastdate
+
+        # add dpm variable to outfile
+        fargs = list(flatten([ncap2, '-O', '-s', "dpm=0.0*time+{0}".format(dpm[currentdate.month]),
+                              os.path.join(args.destdir, outfile), os.path.join(args.destdir, outfile)]))
+        print '{} {} {}[...] -> {}'.format(fargs[0],fargs[1],fargs[2], fargs[-1])
+        returnval = subprocess.call(fargs)
+        if returnval != 0:
+            sys.exit('Error executing: {}'.format(' '.join(fargs)))
+        
+        # add dpm attributes
+        fargs = [ncatted]
+        fargs.append(['-a', 'units,dpm,o,c,days'])
+        fargs.append(['-a', 'long_name,dpm,o,c,Days per month'])
+        fargs.append([os.path.join(args.destdir, outfile)])
+        fargs = list(flatten(fargs))
+        print '{} {} {}[...] -> {}'.format(fargs[0],fargs[1],fargs[2], fargs[-1])
+        returnval = subprocess.call(fargs)
+        if returnval != 0:
+            sys.exit('Error executing: {}'.format(' '.join(fargs)))
+
+        ndays = calendar.monthrange(currentdate.year, currentdate.month)[1]
+        lastmonth = currentdate
+        currentdate += datetime.timedelta(days = ndays)
 
     # time series of monthly means
     fileglob = '{0}.vic.ha.????-??.mean.nc'.format(args.casename)
@@ -267,11 +291,6 @@ def main():
     if lastdate.month != 12:
         lastyear -= 1
 
-    if leapcal == 'noleap':
-        dpm=[0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] # Allows 1-based indexing
-    else:
-        dpm=[0, 31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] # Allows 1-based indexing
-
     for month in xrange(1,13):
         filelist = []
         for y in xrange(firstyear, lastyear+1):
@@ -284,54 +303,39 @@ def main():
         returnval = subprocess.call(fargs)
         if returnval != 0:
             sys.exit('Error executing: {}'.format(' '.join(fargs)))
-        # add dpm variable
-        fargs = list(flatten([ncap2, '-O', '-s', "dpm=0.0*time+{0}".format(dpm[month]),
-                         os.path.join(args.destdir, outfile), os.path.join(args.destdir, outfile)]))
-        print '{} {} {}[...] -> {}'.format(fargs[0],fargs[1],fargs[2], fargs[-1])
-        returnval = subprocess.call(fargs)
-        if returnval != 0:
-            sys.exit('Error executing: {}'.format(' '.join(fargs)))
-        # add dpm attributes
-        fargs = list(flatten([ncatted, '-O', '-s', "dpm=0.0*time+{0}".format(dpm[month]),
-                         os.path.join(args.destdir, outfile), os.path.join(args.destdir, outfile)]))
-        fargs = [ncatted]
-        fargs.append(['-a', 'units,dpm,o,c,days'])
-        fargs.append(['-a', 'long_name,dpm,o,c,Days per month'])
-        fargs.append([os.path.join(args.destdir, outfile)])
-        fargs = list(flatten(fargs))
-        print '{} {} {}[...] -> {}'.format(fargs[0],fargs[1],fargs[2], fargs[-1])
-        returnval = subprocess.call(fargs)
-        if returnval != 0:
-            sys.exit('Error executing: {}'.format(' '.join(fargs)))
     
     # annual means: only complete years
-    if timestep != 'monthly':
-        firstyear = firstdate.year
-        lastyear = lastdate.year
-        if firstdate.month != 1:
-            firstyear += 1
-        if lastdate.month != 12:
-            lastyear -= 1
-        currentyear = firstyear
-        while currentyear <= lastyear:
-            fileglob = ('{0}.vic.ha.{1:04d}-??-??.nc'.
-                        format(args.casename, currentyear))
-            filelist = sorted(glob.glob(os.path.join(args.destdir, fileglob)))
-            outfile = ('{0}.vic.ha.{1:04d}.mean.nc'.
-                       format(args.casename, currentyear))
-            fargs = list(flatten([ncra, '-O', filelist,
-                                  os.path.join(args.destdir, outfile)]))
-            print '{} [...] -> {}'.format(fargs[0], fargs[-1])
-            returnval = subprocess.call(fargs)
-            if returnval != 0:
-                sys.exit('Error executing: {}'.format(' '.join(fargs)))
-            currentyear += 1
+    firstyear = firstdate.year
+    lastyear = lastdate.year
+    if firstdate.month != 1:
+        firstyear += 1
+    if lastdate.month != 12:
+        lastyear -= 1
+    currentyear = firstyear
+    while currentyear <= lastyear:
+        
+        # make a time series for each year
+        tempfile = os.path.join(args.destdir, ('{0}.vic.ha.{1:04d}.ts.nc'.format(args.casename, currentyear)))
+        fileglob = ('{0}.vic.ha.{1:04d}-??.mean.nc'.
+                    format(args.casename, currentyear))
+        filelist = sorted(glob.glob(os.path.join(args.destdir, fileglob)))
+        fargs = list(flatten([ncrcat, '-O', filelist, tempfile]))
+        print '{} {} {}[...] -> {}'.format(fargs[0],fargs[1],fargs[2], fargs[-1])
+        returnval = subprocess.call(fargs)
+        if returnval != 0:
+            sys.exit('Error executing: {}'.format(' '.join(fargs)))
 
-        # annual time series: incomplete years as well
-        firstyear = firstdate.year
-        lastyear = lastdate.year
-        currentyear = firstyear
-        while currentyear <= lastyear:
+        # use ncwa to find annual mean
+        outfile = os.path.join(args.destdir, ('{0}.vic.ha.{1:04d}.mean.nc'.
+                               format(args.casename, currentyear)))
+        fargs = list(flatten([ncwa, '-w', 'dpm', '-a', 'time', tempfile, outfile]))
+        print '{} [...] -> {}'.format(fargs[0], fargs[-1])
+        returnval = subprocess.call(fargs)
+        if returnval != 0:
+            sys.exit('Error executing: {}'.format(' '.join(fargs)))
+        
+        if timestep != 'monthly':
+            # annual time series: incomplete years as well
             fileglob = ('{0}.vic.ha.{1:04d}-??-??.nc'.
                         format(args.casename, currentyear))
             filelist = sorted(glob.glob(os.path.join(args.destdir, fileglob)))
@@ -344,7 +348,8 @@ def main():
             if returnval != 0:
                 sys.exit('Error executing: {}'.format(' '.join(fargs)))
             tobedeleted.append(filelist)
-            currentyear += 1
+        
+        currentyear += 1
 
     # make seasonal averages from monthly means
     firstyear = firstdate.year
