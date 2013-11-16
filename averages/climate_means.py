@@ -24,14 +24,14 @@ def main():
     startdate = parse(start)
     enddate = parse(end)
 
-    outfile = "{}.{}-{}.nc".format(prefix, start.replace("-", ""), end.replace("-", ""))
+    outfile = os.path.join(destdir, "{}.{}-{}.nc".format(prefix, start.replace("-", ""), end.replace("-", "")))
     # shorten the file
     # Get average using ncra
     fargs = ['ncks', '-O', '-D', '0']
     fargs.append(['-d'])
     fargs.append(['time,%s,%s' %(start, end)])
     fargs.append([timeseries])
-    fargs.append([os.path.join(destdir, outfile)])
+    fargs.append([outfile])
     call_nco(fargs)
     timeseries = outfile
 
