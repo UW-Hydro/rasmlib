@@ -38,9 +38,9 @@ def main():
     if not monthly_inputs:
         # Use CDO to get climate means
         # seasonal means
-        seasmean = os.path.join(destdir,
-                                "{}.{}-{}.{}.nc".format(prefix, start.replace("-", ""), end.replace("-", ""), "seasmean"))
-        cdo.seasmean(input=timeseries, output=seasmean)
+        yseasmean = os.path.join(destdir,
+                                "{}.{}-{}.{}.nc".format(prefix, start.replace("-", ""), end.replace("-", ""), "yseasmean"))
+        cdo.yseasmean(input=timeseries, output=yseasmean)
         # Yearly Means
         yearmean = os.path.join(destdir,
                                 "{}.{}-{}.{}.nc".format(prefix, start.replace("-", ""), end.replace("-", ""), "yearmean"))
@@ -56,7 +56,7 @@ def main():
         for i, seas in enumerate(seasons):
             outfile = "{}.{}-{}.{}.mean.nc".format(prefix, start.replace("-", ""), end.replace("-", ""), seas)
             fargs = ['ncks', '-O', '-d', 'time,%i' %(i)]
-            fargs.append([seasmean, os.path.join(destdir, outfile)])
+            fargs.append([yseasmean, os.path.join(destdir, outfile)])
             call_nco(fargs)
 
         print('splitting yearly means now')
