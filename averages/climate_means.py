@@ -38,13 +38,16 @@ def main():
     if not monthly_inputs:
         # Use CDO to get climate means
         # seasonal means
-        seasmean = "{}.{}-{}.{}.nc".format(prefix, start.replace("-", ""), end.replace("-", ""), "seasmean")
+        seasmean = os.path.join(destdir,
+                                "{}.{}-{}.{}.nc".format(prefix, start.replace("-", ""), end.replace("-", ""), "seasmean"))
         cdo.seasmean(input=timeseries, output=seasmean)
         # Yearly Means
-        yearmean = "{}.{}-{}.{}.nc".format(prefix, start.replace("-", ""), end.replace("-", ""), "yearmean")
+        yearmean = os.path.join(destdir,
+                                "{}.{}-{}.{}.nc".format(prefix, start.replace("-", ""), end.replace("-", ""), "yearmean"))
         cdo.yearmean(input=timeseries, output=yearmean)
         # Monthly Means
-        ymonmean = "{}.{}-{}.{}.nc".format(prefix, start.replace("-", ""), end.replace("-", ""), "ymonmean")
+        ymonmean = os.path.join(destdir,
+                                "{}.{}-{}.{}.nc".format(prefix, start.replace("-", ""), end.replace("-", ""), "ymonmean"))
         cdo.ymonmean(input=timeseries, output=ymonmean)
 
         # Now split these files
