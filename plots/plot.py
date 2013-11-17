@@ -279,6 +279,8 @@ def process_command_line():
     # Deal with plots section
     for var in Main['plots']:
         print config_dict[var]['plot_pannels']
+        if not isinstance(config_dict[var]['plot_iterator'], list):
+            config_dict[var]['plot_iterator'] = list([config_dict[var]['plot_iterator']])
         for num in xrange(int(config_dict[var]['plot_pannels'])):
             pannel = 'pannel'+str(num)
             if pannel+'_path' not in config_dict[var]:
