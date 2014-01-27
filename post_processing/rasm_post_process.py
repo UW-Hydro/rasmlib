@@ -20,9 +20,12 @@ from __future__ import print_function
 import argparse
 import glob
 import os
+import multiprocessing
 import means
 import share
 from adjust_timestamp import adjust_timestamp
+
+results = []
 
 
 def main():
@@ -38,7 +41,7 @@ def main():
     files, config_dict = process_init(config_file, short_term_archive,
                                       output_preset, processed_dir)
 
-    # config_dict['options']['numofproc'] = numofproc
+    config_dict['options']['numofproc'] = numofproc
     # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #
@@ -69,12 +72,11 @@ def process_init(config_file, short_term_archive,
     casename = os.path.basename(os.path.normpath(short_term_archive))
 
     if processed_dir:
-        outdir = processed_dir
+        procdir = processed_dir
     else:
         if "WORKDIR" in os.environ:
             workdir = os.environ.get('WORKDIR')
             procdir = os.path.join(workdir, 'processed')
-            outdir = os.path.join(procdir, casename)
         else:
             raise ValueError('ERROR: Either provide an path to \
                              --processed_dir or set your $WORKDIR \
@@ -86,14 +88,14 @@ def process_init(config_file, short_term_archive,
     if output_preset == 'hourly':
         dirs.append('monthly_mean_diurnal_cycle')
 
-    processed_case_dir = os.path.join(outdir, casename)
+    processed_case_dir = os.path.join(procdir, casename)
     processed_comp_dir = os.path.join(processed_case_dir,
                                       config_dict['options']['component'])
     directories = share.make_directories(processed_comp_dir, dirs)
 
+    directories['processed_case_dir'] = processed_case_dir
+    directories['processed_comp_dir'] = processed_comp_dir
     config_dict['options']['directories'] = directories
-    config_dict['options']['directories']['processed_case_dir'] = processed_case_dir
-    config_dict['options']['directories']['processed_comp_dir'] = processed_comp_dir
     # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #
@@ -135,17 +137,34 @@ def process_run(filelist, config_dict):
     directories = config_dict['options']['directories']
     fname_format = options['fname_format']
     output_preset = config_dict['options']['output_preset']
+    output_preset = config_dict['options']['output_preset']
+    numofproc = config_dict['options']['numofproc']
     # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #
     # Adjust timestep if needed
     if abs(options['timestamp_offset']) > 0:
-        filelist = adjust_timestamp(filelist,
-                                    timestep=output_preset,
-                                    nsteps=options['timestamp_offset'],
-                                    fname_format=fname_format,
-                                    destdir=directories['temp'],
-                                    calendar=options['calendar'])
+        if numofproc > 1:
+            print('Running adjust_timestamp: {0} processes'.format(numofproc))
+            filechunks = share.chunks(filelist, numofproc)
+            pool = multiprocessing.Pool(numofproc)
+
+            kwds = {'timestep': output_preset,
+                    'nsteps': options['timestamp_offset'],
+                    'fname_format': fname_format,
+                    'destdir': directories['temp'],
+                    'calendar': options['calendar']}
+
+            for chunk in filechunks:
+                pool.apply_async(adjust_timestamp, callback=store_result,
+                                 args=chunk, kwds=kwds)
+        else:
+            filelist = adjust_timestamp(filelist,
+                                        timestep=output_preset,
+                                        nsteps=options['timestamp_offset'],
+                                        fname_format=fname_format,
+                                        destdir=directories['temp'],
+                                        calendar=options['calendar'])
     # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #
@@ -246,12 +265,21 @@ def process_command_line():
                         (default=$WORKDIR/processed/$RUN/$COMPONENT)",
                         default=None)
     parser.add_argument("-np", "--numofproc", type=int,
-                        help="Number of processors used to run job", default=1)
+                        help="Number of processors used to run job",
+                        default=3)
 
     args = parser.parse_args()
 
     return args.config_file, args.short_term_archive, args.output_preset,\
         args.processed_dir, args.numofproc
+# -------------------------------------------------------------------- #
+
+
+def store_result(result):
+    # This is called whenever foo_pool(i) returns a result.
+    # result_list is modified only by the main process, not the pool workers.
+    results.append(result)
+# -------------------------------------------------------------------- #
 
 
 # -------------------------------------------------------------------- #

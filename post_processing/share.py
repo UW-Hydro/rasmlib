@@ -238,8 +238,8 @@ def custom_strftime(datetimeobj, format):
                         '%m': "{0:02d}".format(int(datetimeobj.month)),
                         '%d': "{0:02d}".format(int(datetimeobj.day)),
                         '%s': "{0:05d}".format(int(datetimeobj.hour*SECSPERHOUR
-                                  + datetimeobj.minute*SECSPERMINUTE
-                                  + datetimeobj.second))}
+                                    + datetimeobj.minute*SECSPERMINUTE
+                                    + datetimeobj.second))}
 
         date_string = multiple_replace(datetimedict, format)
     else:
@@ -252,3 +252,8 @@ def make_tarfile(output_filename, source_dir):
     """Simple wrapper to create a compressed tar file at the end of the run"""
     with tarfile.open(output_filename, "w:gz") as tar:
         tar.add(source_dir, arcname=os.path.basename(source_dir))
+
+def chunks(l, n):
+    """ Yield successive n-sized chunks from l."""
+    for i in xrange(0, len(l), n):
+        yield l[i:i+n]

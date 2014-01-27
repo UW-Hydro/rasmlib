@@ -14,6 +14,7 @@ def mean_monthly_diurnal_cycle(filelist, options, variables=None):
     Note: only accepts hourly inputs
     """
     nco = Nco(overwrite=True)
+    print('Making monthly diurnal cycle means')
 
     # ---------------------------------------------------------------- #
     # Unpack needed options
@@ -73,6 +74,7 @@ def mean_monthly_diurnal_cycle(filelist, options, variables=None):
 def daily_mean_timeseries(filelist, options, variables=None):
     """Create a timeseries of daily means"""
     nco = Nco(overwrite=True)
+    print('Making daily mean timeseries')
 
     # ---------------------------------------------------------------- #
     # Unpack needed options
@@ -150,6 +152,7 @@ def daily_mean_timeseries(filelist, options, variables=None):
 def monthly_mean_timeseries(filelist, options, variables=None):
     """ Create a timeseries of monthly means"""
     nco = Nco(overwrite=True)
+    print('Making monthly mean timeseries')
 
     # ---------------------------------------------------------------- #
     # Unpack needed options
