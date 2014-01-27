@@ -21,7 +21,7 @@ def mean_monthly_diurnal_cycle(filelist, options, variables=None):
     casename = options['casename']
     model = options['model']
     timestep = options['timestep']
-    outdir = options['outdir']
+    outdir = options['directories']['monthly_mean_diurnal_cycle']
     if timestep not in ['hourly', 'hourlyi']:
         raise ValueError('mean_monthly_diurnal_cycle only \
                          accepts hourly inputs')
@@ -80,8 +80,8 @@ def daily_mean_timeseries(filelist, options, variables=None):
     casename = options['casename']
     model = options['model']
     timestep = options['timestep']
-    outdir = options['outdir']
-    tempdir = options['tempdir']
+    outdir = options['directories']['daily_mean_timeseries']
+    tempdir = options['directories']['temp']
     if timestep == 'monthly':
         raise ValueError('daily_mean_timeseries requires a \
                          timestp of daily or less')
@@ -157,8 +157,8 @@ def monthly_mean_timeseries(filelist, options, variables=None):
     casename = options['casename']
     model = options['model']
     timestep = options['timestep']
-    outdir = options['outdir']
-    tempdir = options['tempdir']
+    outdir = options['directories']['monthly_mean_timeseries']
+    tempdir = options['directories']['temp']
     # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #
