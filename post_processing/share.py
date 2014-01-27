@@ -7,6 +7,7 @@ from ConfigParser import SafeConfigParser
 import os
 import datetime
 import re
+import tarfile
 
 HOURSPERDAY = 24.
 SECSPERHOUR = 3600.
@@ -245,3 +246,9 @@ def custom_strftime(datetimeobj, format):
         date_string = datetimeobj.strftime(format)
 
     return date_string
+
+
+def make_tarfile(output_filename, source_dir):
+    """Simple wrapper to create a compressed tar file at the end of the run"""
+    with tarfile.open(output_filename, "w:gz") as tar:
+        tar.add(source_dir, arcname=os.path.basename(source_dir))

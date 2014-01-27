@@ -131,7 +131,7 @@ def daily_mean_timeseries(filelist, options, variables=None):
                     nco.ncra(input=dgroup, ouput=outfile, variable=variables)
                     daily_means.append(outfile)
     else:
-        daily_means = filelist
+        daily_means = [fname.filename for fname in filelist]
     # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #
@@ -209,7 +209,7 @@ def monthly_mean_timeseries(filelist, options, variables=None):
                 nco.ncra(input=mgroup, ouput=outfile, variable=variables)
                 monthly_means.append(outfile)
     else:
-        monthly_means = filelist
+        monthly_means = [fname.filename for fname in filelist]
     # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #

@@ -92,6 +92,8 @@ def process_init(config_file, short_term_archive,
     directories = share.make_directories(processed_comp_dir, dirs)
 
     config_dict['options']['directories'] = directories
+    config_dict['options']['directories']['processed_case_dir'] = processed_case_dir
+    config_dict['options']['directories']['processed_comp_dir'] = processed_comp_dir
     # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #
@@ -180,7 +182,18 @@ def process_final(results, config_dict):
 
     print('Finalizing rasm_post_process.py\n')
     output_preset = config_dict['options']['output_preset']
+    component = config_dict['options']['component']
+    processed_case_dir = config_dict['options']['directories']['processed_case_dir']
+    processed_comp_dir = config_dict['options']['directories']['processed_comp_dir']
+
     # ---------------------------------------------------------------- #
+    # Make a compressed tar.gz file from the archive
+    tarfile_name = os.path.join(processed_case_dir,
+                                "{0}.tar.gz".format(component))
+    share.make_tarfile(tarfile_name, processed_comp_dir)
+    # ---------------------------------------------------------------- #
+    # ---------------------------------------------------------------- #
+
     # Clean up
     if config_dict['options']['clean']:
         tempdir = config_dict['options']['directories']['temp']
@@ -203,6 +216,9 @@ def process_final(results, config_dict):
     print('Completed rasm_post_process.py.  Options were:')
     for key, val in config_dict['options'].iteritems():
         print("{}: {}".format(key, val))
+    print("\n")
+
+    print('tarfile is here: {0}'.format(tarfile_name))
     print("\n")
 
     print('done')
