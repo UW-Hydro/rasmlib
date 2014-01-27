@@ -64,8 +64,9 @@ def mean_monthly_diurnal_cycle(filelist, options, variables=None):
                 filename = "{0}.{1}.hmmdc.{2}-{3}-{4}.nc".format(casename,
                                                                  model, year,
                                                                  month, hour)
+                inputs = [fname.filename for fname in hgroup]
                 outfile = os.path.join(outdir, filename)
-                nco.ncra(input=hgroup, ouput=outfile, variable=variables)
+                nco.ncra(input=inputs, ouput=outfile, variable=variables)
                 outfiles.append(outfile)
     # ---------------------------------------------------------------- #
     return outfiles
@@ -129,8 +130,9 @@ def daily_mean_timeseries(filelist, options, variables=None):
                                                                    model,
                                                                    year, month,
                                                                    day)
+                    inputs = [fname.filename for fname in dgroup]
                     outfile = os.path.join(tempdir, filename)
-                    nco.ncra(input=dgroup, ouput=outfile, variable=variables)
+                    nco.ncra(input=inputs, ouput=outfile, variable=variables)
                     daily_means.append(outfile)
     else:
         daily_means = [fname.filename for fname in filelist]
@@ -208,8 +210,9 @@ def monthly_mean_timeseries(filelist, options, variables=None):
             for month, mgroup in groupby(ygroup, lambda x: x.filedate.month):
                 filename = "{0}.{1}.hmm.{2}-{3}.nc".format(casename, model,
                                                            year, month)
+                inputs = [fname.filename for fname in mgroup]
                 outfile = os.path.join(tempdir, filename)
-                nco.ncra(input=mgroup, ouput=outfile, variable=variables)
+                nco.ncra(input=inputs, ouput=outfile, variable=variables)
                 monthly_means.append(outfile)
     else:
         monthly_means = [fname.filename for fname in filelist]
