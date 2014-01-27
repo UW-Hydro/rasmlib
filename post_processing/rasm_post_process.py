@@ -195,7 +195,6 @@ def process_run(filelist, config_dict):
     results[function] = means.monthly_mean_timeseries(filelist, options,
                                                       variables=varlist)
     # ---------------------------------------------------------------- #
-
     return results
 
 

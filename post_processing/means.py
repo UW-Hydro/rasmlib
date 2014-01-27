@@ -145,9 +145,9 @@ def daily_mean_timeseries(filelist, options, variables=None):
     end = enddate.strftime(format)
     filename = "{0}.{1}.hdm.{2}-{3}.nc".format(casename, model, start, end)
     outfile = os.path.join(outdir, filename)
+    print('Daily mean timeseries file: {}'.format(outfile))
     nco.ncrcat(input=daily_means, ouput=outfile, variable=variables)
     # ---------------------------------------------------------------- #
-
     return outfile
 
 
@@ -225,6 +225,7 @@ def monthly_mean_timeseries(filelist, options, variables=None):
     end = enddate.strftime(format)
     filename = "{0}.{1}.hmm.{2}-{3}.nc".format(casename, model, start, end)
     outfile = os.path.join(outdir, filename)
+    print('Monthly mean timeseries file: {}'.format(outfile))
     nco.ncrcat(input=monthly_means, ouput=outfile, variable=variables)
     # ---------------------------------------------------------------- #
     return outfile

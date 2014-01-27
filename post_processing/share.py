@@ -8,6 +8,7 @@ import os
 import datetime
 import re
 import tarfile
+from contextlib import closing
 
 HOURSPERDAY = 24.
 SECSPERHOUR = 3600.
@@ -250,8 +251,9 @@ def custom_strftime(datetimeobj, format):
 
 def make_tarfile(output_filename, source_dir):
     """Simple wrapper to create a compressed tar file at the end of the run"""
-    with tarfile.open(output_filename, "w:gz") as tar:
+    with closing(tarfile.open(output_filename, "w:gz")) as tar:
         tar.add(source_dir, arcname=os.path.basename(source_dir))
+
 
 def chunks(l, n):
     """ Yield successive n-sized chunks from l."""
