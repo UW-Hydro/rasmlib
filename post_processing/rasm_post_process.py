@@ -204,22 +204,24 @@ def process_final(results, config_dict):
     print('Finalizing rasm_post_process.py\n')
     output_preset = config_dict['options']['output_preset']
     component = config_dict['options']['component']
-    processed_case_dir = config_dict['options']['directories']['processed_case_dir']
-    processed_comp_dir = config_dict['options']['directories']['processed_comp_dir']
+    directories = config_dict['options']['directories']
+    processed_case_dir = directories['processed_case_dir']
+    processed_comp_dir = directories['processed_comp_dir']
+
+    # ---------------------------------------------------------------- #
+    # Clean up
+    if config_dict['options']['clean']:
+        tempdir = directories['temp']
+        share.clean_dir(tempdir)
+        print("Cleaned up temporary directory: {}".format(tempdir))
+    # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #
     # Make a compressed tar.gz file from the archive
     tarfile_name = os.path.join(processed_case_dir,
                                 "{0}.tar.gz".format(component))
+    print('Making tarfile now: {0}'.format(tarfile_name))
     share.make_tarfile(tarfile_name, processed_comp_dir)
-    # ---------------------------------------------------------------- #
-    # ---------------------------------------------------------------- #
-
-    # Clean up
-    if config_dict['options']['clean']:
-        tempdir = config_dict['options']['directories']['temp']
-        share.clean_dir(tempdir)
-        print("Cleaned up temporary directory: {}".format(tempdir))
     # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #
