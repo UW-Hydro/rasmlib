@@ -25,7 +25,7 @@ import means
 import share
 from adjust_timestamp import adjust_timestamp
 
-results = []
+results_list = []
 
 
 def main():
@@ -158,6 +158,9 @@ def process_run(filelist, config_dict):
             for chunk in filechunks:
                 pool.apply_async(adjust_timestamp, callback=store_result,
                                  args=chunk, kwds=kwds)
+            pool.close()
+            pool.join()
+            filelist = results_list
         else:
             filelist = adjust_timestamp(filelist,
                                         timestep=output_preset,
@@ -278,7 +281,7 @@ def process_command_line():
 def store_result(result):
     # This is called whenever foo_pool(i) returns a result.
     # result_list is modified only by the main process, not the pool workers.
-    results.append(result)
+    results_list.append(result)
 # -------------------------------------------------------------------- #
 
 
