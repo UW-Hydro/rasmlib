@@ -96,16 +96,18 @@ def process_init(config_file, short_term_archive,
 
     # ---------------------------------------------------------------- #
     # Get list of files
-    format = config_dict['config_dict'][output_preset]
-    globformat = format.replace('{CASE}', casename)
-    globformat.replace('%Y', '????')
-    globformat.replace('%m', '??')
-    globformat.replace('%d', '??')
-    globformat.replace('%s', '?????')
+    format = config_dict['format'][output_preset]
+    format = format.replace('{CASE}', casename)
+    globformat = format.replace('%Y', '????')
+    globformat = globformat.replace('%m', '??')
+    globformat = globformat.replace('%d', '??')
+    globformat = globformat.replace('%s', '?????')
 
     hist_dir = os.path.join(short_term_archive,
                             config_dict['options']['subpath'])
+    print('Globing with format {0} in histdir {1}'.format(globformat, hist_dir))
     files = glob.glob(os.path.join(hist_dir, globformat))
+    print('Found {0} files from glob'.format(len(files)))
 
     filelist = [share.Histfile(filename=f, fname_format=format) for f in files]
     filelist.sort(key=lambda r: r.filedate)

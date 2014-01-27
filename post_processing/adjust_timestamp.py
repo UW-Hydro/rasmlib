@@ -53,7 +53,7 @@ def main():
                                    destdir=destdir,
                                    calendar=calendar)
 
-    print('New file list: {}'.format(newfilelist))
+    print('New file list: {0}'.format(newfilelist))
     # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #
@@ -110,7 +110,7 @@ def adjust_timestamp(filelist,
     # Determine if we need to adjust time units
     # (only if units are "xxx since 0000-1-1 0:0:0")
     if "0000-1-1" in time_units[2]:
-        time_units = "{} since 0001-01-01 0:0:0".format(time_units[0])
+        time_units = "{0} since 0001-01-01 0:0:0".format(time_units[0])
         print("adjusting netcdf base time units \
               from 0000-1-1 to 0001-01-01 0:0:0")
         unit_offset = sum(days_per_month)*-1
@@ -128,7 +128,6 @@ def adjust_timestamp(filelist,
         month = fileobj.month
         day = fileobj.day
         hour = fileobj.hour
-        print(filedate, nsteps)
 
         if calendar in ['standard', 'gregorian', 'proleptic_gregorian']:
             # Use python datetime calendar
@@ -231,19 +230,19 @@ def adjust_timestamp(filelist,
         newfilename = os.path.join(destdir,
                                    custom_strftime(newfiledate, out_format))
 
-        print('{}-->{}'.format(filename, newfilename))
+        print('{0}-->{1}'.format(filename, newfilename))
         nco.ncap2(input=filename,
                   output=newfilename,
-                  script='time=time+{}'.format(td))
+                  script='time=time+{0}'.format(td))
 
         options = []
         if time_units:
-            options.extend(['-a', 'units,time,o,c,"{}"'.format(time_units)])
+            options.extend(['-a', 'units,time,o,c,"{0}"'.format(time_units)])
         options.extend(['-a', 'long_name,time,o,c,time'])
         options.extend(['-a', 'dimensions,time,o,c,1'])
         options.extend(['-a', 'calendar,time,o,c,noleap'])
         options.extend(['-a', 'type_preferred,time,o,c,int'])
-        options.extend(['-a', 'title,global,o,c,{}'.format(newfilename)])
+        options.extend(['-a', 'title,global,o,c,{0}'.format(newfilename)])
 
         nco.ncatted(input=newfilename, output=newfilename, options=options)
 
@@ -319,7 +318,7 @@ http://nco.sourceforge.net
         raise ValueError('Source directory and target directory \
                          must be different')
     if not os.path.exists(args.srcdir):
-        raise ValueError('Source path does not exist: {}'.format(args.srcdir))
+        raise ValueError('Source path does not exist: {0}'.format(args.srcdir))
     if not os.path.exists(args.destdir):
         os.makedirs(args.destdir)
 
