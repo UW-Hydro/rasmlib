@@ -22,7 +22,7 @@ def mean_monthly_diurnal_cycle(filelist, options, variables=None):
     model = options['model']
     timestep = options['timestep']
     outdir = options['outdir']
-    if timestep != 'hourly':
+    if timestep not in ['hourly', 'hourlyi']:
         raise ValueError('mean_monthly_diurnal_cycle only \
                          accepts hourly inputs')
     # ---------------------------------------------------------------- #
@@ -60,8 +60,9 @@ def mean_monthly_diurnal_cycle(filelist, options, variables=None):
     for year, ygroup in groupby(filelist, lambda x: x.filedate.year):
         for month, mgroup in groupby(ygroup, lambda x: x.filedate.month):
             for hour, hgroup in groupby(mgroup, lambda x: x.filedate.hour):
-                filename = "{}.{}.hmmdc.{}-{}-{}.nc".format(casename, model,
-                                                            year, month, hour)
+                filename = "{0}.{1}.hmmdc.{2}-{3}-{4}.nc".format(casename,
+                                                                 model, year,
+                                                                 month, hour)
                 outfile = os.path.join(outdir, filename)
                 nco.ncra(input=hgroup, ouput=outfile, variable=variables)
                 outfiles.append(outfile)
@@ -122,8 +123,10 @@ def daily_mean_timeseries(filelist, options, variables=None):
         for year, ygroup in groupby(filelist, lambda x: x.filedate.year):
             for month, mgroup in groupby(ygroup, lambda x: x.filedate.month):
                 for day, dgroup in groupby(mgroup, lambda x: x.filedate.day):
-                    filename = "{}.{}.hdm.{}-{}-{}.nc".format(casename, model,
-                                                              year, month, day)
+                    filename = "{0}.{1}.hdm.{2}-{3}-{4}.nc".format(casename,
+                                                                   model,
+                                                                   year, month,
+                                                                   day)
                     outfile = os.path.join(tempdir, filename)
                     nco.ncra(input=dgroup, ouput=outfile, variable=variables)
                     daily_means.append(outfile)
@@ -136,7 +139,7 @@ def daily_mean_timeseries(filelist, options, variables=None):
     format = '%Y%m'
     start = startdate.strftime(format)
     end = enddate.strftime(format)
-    filename = "{}.{}.hdm.{}-{}.nc".format(casename, model, start, end)
+    filename = "{0}.{1}.hdm.{2}-{3}.nc".format(casename, model, start, end)
     outfile = os.path.join(outdir, filename)
     nco.ncrcat(input=daily_means, ouput=outfile, variable=variables)
     # ---------------------------------------------------------------- #
@@ -200,8 +203,8 @@ def monthly_mean_timeseries(filelist, options, variables=None):
     if timestep != 'monthly':
         for year, ygroup in groupby(filelist, lambda x: x.filedate.year):
             for month, mgroup in groupby(ygroup, lambda x: x.filedate.month):
-                filename = "{}.{}.hmm.{}-{}.nc".format(casename, model,
-                                                       year, month)
+                filename = "{0}.{1}.hmm.{2}-{3}.nc".format(casename, model,
+                                                           year, month)
                 outfile = os.path.join(tempdir, filename)
                 nco.ncra(input=mgroup, ouput=outfile, variable=variables)
                 monthly_means.append(outfile)
@@ -214,9 +217,8 @@ def monthly_mean_timeseries(filelist, options, variables=None):
     format = '%Y%m%d'
     start = startdate.strftime(format)
     end = enddate.strftime(format)
-    filename = "{}.{}.hmm.{}-{}.nc".format(casename, model, start, end)
+    filename = "{0}.{1}.hmm.{2}-{3}.nc".format(casename, model, start, end)
     outfile = os.path.join(outdir, filename)
     nco.ncrcat(input=monthly_means, ouput=outfile, variable=variables)
     # ---------------------------------------------------------------- #
-
     return outfile

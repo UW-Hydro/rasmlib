@@ -105,7 +105,7 @@ def process_init(config_file, short_term_archive,
 
     hist_dir = os.path.join(short_term_archive,
                             config_dict['options']['subpath'])
-    print('Globing with format {0} in histdir {1}'.format(globformat, hist_dir))
+    print('Glob format: {0}. Histdir: {1}'.format(globformat, hist_dir))
     files = glob.glob(os.path.join(hist_dir, globformat))
     print('Found {0} files from glob'.format(len(files)))
 
@@ -118,6 +118,7 @@ def process_init(config_file, short_term_archive,
     config_dict['options']['casename'] = casename
     config_dict['options']['fname_format'] = format
     config_dict['options']['output_preset'] = output_preset
+    config_dict['options']['timestep'] = output_preset
     # ---------------------------------------------------------------- #
 
     return filelist, config_dict
