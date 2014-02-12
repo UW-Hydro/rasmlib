@@ -54,6 +54,13 @@ class Histfile(object):
         return "History File: {}".format(self.filename)
 
 
+def store_result(result):
+    # This is called whenever foo_pool(i) returns a result.
+    # result_list is modified only by the main process, not the pool workers.
+    results_list.append(result)
+# -------------------------------------------------------------------- #
+
+
 def argsort(seq):
     """ Equivalent to numpy argsort """
     # http://stackoverflow.com/questions/3382352/equivalent-of-numpy-argsort-in-basic-python/3382369#3382369
