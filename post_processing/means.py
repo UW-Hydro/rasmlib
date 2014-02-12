@@ -7,9 +7,16 @@ import multiprocessing
 from itertools import groupby
 from share import dpm, next_month, next_day, prev_month, prev_day, chunks
 from nco import Nco
-nco = Nco()
+nco = Nco(debug=True, no_tmp_fl=True, ram_all=True)
 
 global results_list
+results_list = []
+
+# Sort and grouper key functions
+ykeyfunc = lambda x: x.filedate.year
+mkeyfunc = lambda x: x.filedate.month
+dkeyfunc = lambda x: x.filedate.day
+hkeyfunc = lambda x: x.filedate.hour
 
 
 def monthly_mean_diurnal_cycle(filelist, options, variables=None):
@@ -26,8 +33,9 @@ def monthly_mean_diurnal_cycle(filelist, options, variables=None):
     model = options['model']
     timestep = options['timestep']
     outdir = options['directories']['monthly_mean_diurnal_cycle']
-    tempdir = options['directories']['temp']
     numofproc = options['numofproc']
+    if numofproc < 1:
+        numofproc = 1
 
     if timestep not in ['hourly', 'hourlyi']:
         raise ValueError('mean_monthly_diurnal_cycle only accepts hourly '
@@ -59,57 +67,49 @@ def monthly_mean_diurnal_cycle(filelist, options, variables=None):
         for f in filelist:
             if (f.filedate >= startdate) and (f.filedate <= enddate):
                 new_filelist.append(f)
+        filelist = new_filelist
     # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #
     # Create mean monthly diurnal cycle
+    global results_list
     results_list = []
 
-    if numofproc > 1:
-        pool = multiprocessing.Pool(numofproc)
-        for year, ygroup in groupby(filelist, lambda x: x.filedate.year):
-            for month, mgroup in groupby(ygroup, lambda x: x.filedate.month):
-                    pool.apply_async(diurnal_cycle,
-                                     callback=store_result,
-                                     args=(year, month, mgroup, tempdir,
-                                           outdir, casename, model,
-                                           variables))
-        pool.close()
-        pool.join()
+    pool = multiprocessing.Pool(numofproc)
+    filelist.sort(key=ykeyfunc)
+    for year, ygroup in groupby(filelist, ykeyfunc):
+        ylist = list(ygroup)
+        ylist.sort(key=mkeyfunc)
+        for month, mgroup in groupby(ylist, mkeyfunc):
+            mlist = list(mgroup)
+            mlist.sort(key=hkeyfunc)
+            for hour, hgroup in groupby(mlist, hkeyfunc):
+                hlist = list(hgroup)
+                hlist.sort(key=hkeyfunc)
+                pool.apply_async(diurnal_cycle,
+                                 callback=store_result,
+                                 args=(year, month, hour, hlist, 
+                                       outdir, casename, model,
+                                       variables))
+    pool.close()
+    pool.join()
 
-        # make sure the results_list is sorted
-        results_list.sort(key=lambda x: x.filedate)
+    # make sure the results_list is sorted
+    results_list.sort()
 
-    else:
-        for year, ygroup in groupby(filelist, lambda x: x.filedate.year):
-            for month, mgroup in groupby(ygroup, lambda x: x.filedate.month):
-                outfile = diurnal_cycle(year, month, mgroup, tempdir,
-                                        outdir, casename, model,
-                                        variables)
-                results_list.append(outfile)
     # ---------------------------------------------------------------- #
     return results_list
 
 
-def diurnal_cycle(year, month, mgroup, tempdir, outdir, casename, model,
+def diurnal_cycle(year, month, hour, hlist, outdir, casename, model,
                   variables):
     """ """
-    hours = []
-    for hour, hgroup in groupby(mgroup, lambda x: x.filedate.hour):
-        filename = "{0}.{1}.hhmm.{2:04}-{3:02}-{4:02}.nc".format(casename,
-                                                                 model, year,
-                                                                 month, hour)
-        inputs = [fname.filename for fname in hgroup]
-        outfile = os.path.join(tempdir, filename)
-        nco.ncra(input=inputs, output=outfile, variable=variables,
-                 options='-h')
-        hours.append(filename)
-
-    filename = "{0}.{1}.hmmdc.{2:04}-{3:02}.nc".format(casename, model, year,
-                                                       month)
-    nco.ncrcat(input=hours, output=filename, variables=variables)
-
-    return filename
+    filename = "{0}.{1}.hhmm.{2:04}-{3:02}-{4:02}.nc".format(casename, model,
+                                                             year, month, hour)
+    inputs = [fname.filename for fname in hlist]
+    outfile = os.path.join(outdir, filename)
+    nco.ncra(input=inputs, output=outfile, variable=variables, history=True)
+    return outfile
 
 
 def daily_mean_timeseries(filelist, options, variables=None):
@@ -126,6 +126,8 @@ def daily_mean_timeseries(filelist, options, variables=None):
     outdir = options['directories']['daily_mean_timeseries']
     tempdir = options['directories']['temp']
     numofproc = options['numofproc']
+    if numofproc < 1:
+        numofproc = 1
     if timestep == 'monthly':
         raise ValueError('daily_mean_timeseries requires a \
                          timestp of daily or less')
@@ -162,36 +164,30 @@ def daily_mean_timeseries(filelist, options, variables=None):
 
     # ---------------------------------------------------------------- #
     # Create daily means
+    global results_list
     results_list = []
     if timestep == 'hourly':
-        if numofproc > 1:
-            pool = multiprocessing.Pool(numofproc)
+        pool = multiprocessing.Pool(numofproc)
+        for year, ygroup in groupby(filelist, ykeyfunc):
+            ylist = list(ygroup)
+            ylist.sort(key=mkeyfunc)
+            for month, mgroup in groupby(ylist, mkeyfunc):
+                mlist = list(mgroup)
+                mlist.sort(key=hkeyfunc)
+                for day, dgroup in groupby(mlist, dkeyfunc):
+                    dlist = list(dgroup)
+                    dlist.sort(key=dkeyfunc)
+                    pool.apply_async(day_mean,
+                                     callback=store_result,
+                                     args=(year, month, dlist,
+                                           tempdir, outdir, casename,
+                                           model, variables))
+        pool.close()
+        pool.join()
 
-            for year, ygroup in groupby(filelist, lambda x: x.filedate.year):
-                for month, mgroup in groupby(ygroup,
-                                             lambda x: x.filedate.month):
-                    for day, dgroup in groupby(mgroup,
-                                               lambda x: x.filedate.day):
-                        pool.apply_async(day_mean,
-                                         callback=store_result,
-                                         args=(year, month, mgroup, tempdir,
-                                               outdir, casename, model,
-                                               variables))
-            pool.close()
-            pool.join()
+        # make sure the results_list is sorted
+        results_list.sort()
 
-            # make sure the results_list is sorted
-            results_list.sort(key=lambda x: x.filedate)
-
-        else:
-            for year, ygroup in groupby(filelist, lambda x: x.filedate.year):
-                for month, mgroup in groupby(ygroup,
-                                             lambda x: x.filedate.month):
-                    for day, dgroup in groupby(mgroup,
-                                               lambda x: x.filedate.day):
-                        outfile = day_mean(year, month, day, dgroup, tempdir,
-                                           outdir, casename, model, variables)
-                        results_list.append(outfile)
     else:
         results_list = [fname.filename for fname in filelist]
     # ---------------------------------------------------------------- #
@@ -204,7 +200,7 @@ def daily_mean_timeseries(filelist, options, variables=None):
     results_list = []
     for i, chunk in enumerate(chunked_list):
         outfile = os.path.join(tempdir, 'chunk.{0}.nc'.format(i))
-        nco.ncrcat(input=chunk, output=outfile, options='-h')
+        nco.ncrcat(input=chunk, output=outfile, history=True)
         results_list.append(outfile)
     # ---------------------------------------------------------------- #
 
@@ -222,13 +218,13 @@ def daily_mean_timeseries(filelist, options, variables=None):
     return outfile
 
 
-def day_mean(year, month, day, dgroup, tempdir, outdir, casename, model,
+def day_mean(year, month, day, dlist, tempdir, outdir, casename, model,
              variables):
     filename = "{0}.{1}.hdm.{2:04}-{3:02}-{4:02}.nc".format(casename, model,
                                                             year, month, day)
-    inputs = [fname.filename for fname in dgroup]
+    inputs = [fname.filename for fname in dlist]
     outfile = os.path.join(tempdir, filename)
-    nco.ncra(input=inputs, output=outfile, variable=variables, options='-h')
+    nco.ncra(input=inputs, output=outfile, variable=variables, history=True)
     return outfile
 
 
@@ -246,6 +242,8 @@ def monthly_mean_timeseries(filelist, options, variables=None):
     outdir = options['directories']['monthly_mean_timeseries']
     tempdir = options['directories']['temp']
     numofproc = options['numofproc']
+    if numofproc < 1:
+        numofproc = 1
     # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #
@@ -286,30 +284,26 @@ def monthly_mean_timeseries(filelist, options, variables=None):
 
     # ---------------------------------------------------------------- #
     # Create monthly means
+    global results_list
     results_list = []
     if timestep != 'monthly':
-        if numofproc > 1:
-            pool = multiprocessing.Pool(numofproc)
-            for year, ygroup in groupby(filelist, lambda x: x.filedate.year):
-                for month, mgroup in groupby(ygroup,
-                                             lambda x: x.filedate.month):
-                    pool.apply_async(month_mean,
-                                     callback=store_result,
-                                     args=(year, month, mgroup, tempdir,
-                                           outdir, casename, model,
-                                           variables))
-            pool.close()
-            pool.join()
+        pool = multiprocessing.Pool(numofproc)
+        for year, ygroup in groupby(filelist, ykeyfunc):
+            ylist = list(ygroup)
+            ylist.sort(key=mkeyfunc)
+            for month, mgroup in groupby(ylist, mkeyfunc):
+                mlist = list(mgroup)
+                mlist.sort(key=hkeyfunc)
+                pool.apply_async(month_mean,
+                                 callback=store_result,
+                                 args=(year, month, mlist, tempdir,
+                                       outdir, casename, model,
+                                       variables))
+        pool.close()
+        pool.join()
 
-            # make sure the results_list is sorted
-            results_list.sort(key=lambda x: x.filedate)
-        else:
-            for year, ygroup in groupby(filelist, lambda x: x.filedate.year):
-                for month, mgroup in groupby(ygroup,
-                                             lambda x: x.filedate.month):
-                    outfile = month_mean(year, month, mgroup, tempdir, outdir,
-                                         casename, model, variables)
-                    results_list.append(outfile)
+        # make sure the results_list is sorted
+        results_list.sort()
     else:
         results_list = [fname.filename for fname in filelist]
     # ---------------------------------------------------------------- #
@@ -328,17 +322,18 @@ def monthly_mean_timeseries(filelist, options, variables=None):
     return outfile
 
 
-def month_mean(year, month, mgroup, tempdir, outdir, casename, model,
+def month_mean(year, month, mlist, tempdir, outdir, casename, model,
                variables):
     filename = "{0}.{1}.hmm.{2:04}-{3:02}.nc".format(casename, model,
                                                      year, month)
-    inputs = [fname.filename for fname in mgroup]
+    inputs = [fname.filename for fname in mlist]
     outfile = os.path.join(tempdir, filename)
-    nco.ncra(input=inputs, output=outfile, variable=variables, options='-h')
+    nco.ncra(input=inputs, output=outfile, variable=variables, history=True)
     return outfile
 
 
 def store_result(result):
+    global results_list
     # This is called whenever foo_pool(i) returns a result.
     # result_list is modified only by the main process, not the pool workers.
     results_list.append(result)
