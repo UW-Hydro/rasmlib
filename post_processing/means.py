@@ -5,14 +5,14 @@ means.py
 import os
 import multiprocessing
 from itertools import groupby
-from share import dpm, next_month, next_day, prev_month, prev_day
+from share import dpm, next_month, next_day, prev_month, prev_day, chunks
 from nco import Nco
 nco = Nco()
 
 global results_list
 
 
-def mean_monthly_diurnal_cycle(filelist, options, variables=None):
+def monthly_mean_diurnal_cycle(filelist, options, variables=None):
     """
     Creates a series of netcdf files for each year, month, and hour
     Note: only accepts hourly inputs
@@ -30,8 +30,8 @@ def mean_monthly_diurnal_cycle(filelist, options, variables=None):
     numofproc = options['numofproc']
 
     if timestep not in ['hourly', 'hourlyi']:
-        raise ValueError('mean_monthly_diurnal_cycle only \
-                         accepts hourly inputs')
+        raise ValueError('mean_monthly_diurnal_cycle only accepts hourly '
+                         'inputs')
     # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #
@@ -77,6 +77,9 @@ def mean_monthly_diurnal_cycle(filelist, options, variables=None):
         pool.close()
         pool.join()
 
+        # make sure the results_list is sorted
+        results_list.sort(key=lambda x: x.filedate)
+
     else:
         for year, ygroup in groupby(filelist, lambda x: x.filedate.year):
             for month, mgroup in groupby(ygroup, lambda x: x.filedate.month):
@@ -84,7 +87,6 @@ def mean_monthly_diurnal_cycle(filelist, options, variables=None):
                                         outdir, casename, model,
                                         variables)
                 results_list.append(outfile)
-
     # ---------------------------------------------------------------- #
     return results_list
 
@@ -94,15 +96,17 @@ def diurnal_cycle(year, month, mgroup, tempdir, outdir, casename, model,
     """ """
     hours = []
     for hour, hgroup in groupby(mgroup, lambda x: x.filedate.hour):
-        filename = "{0}.{1}.hhmm.{2}-{3}-{4}.nc".format(casename, model, year,
-                                                        month, hour)
+        filename = "{0}.{1}.hhmm.{2:04}-{3:02}-{4:02}.nc".format(casename,
+                                                                 model, year,
+                                                                 month, hour)
         inputs = [fname.filename for fname in hgroup]
         outfile = os.path.join(tempdir, filename)
-        nco.ncra(input=inputs, output=outfile, variable=variables)
+        nco.ncra(input=inputs, output=outfile, variable=variables,
+                 options='-h')
         hours.append(filename)
 
-    filename = "{0}.{1}.hmmdc.{2}-{3}.nc".format(casename, model, year,
-                                                 month)
+    filename = "{0}.{1}.hmmdc.{2:04}-{3:02}.nc".format(casename, model, year,
+                                                       month)
     nco.ncrcat(input=hours, output=filename, variables=variables)
 
     return filename
@@ -175,6 +179,10 @@ def daily_mean_timeseries(filelist, options, variables=None):
                                                variables))
             pool.close()
             pool.join()
+
+            # make sure the results_list is sorted
+            results_list.sort(key=lambda x: x.filedate)
+
         else:
             for year, ygroup in groupby(filelist, lambda x: x.filedate.year):
                 for month, mgroup in groupby(ygroup,
@@ -184,14 +192,25 @@ def daily_mean_timeseries(filelist, options, variables=None):
                         outfile = day_mean(year, month, day, dgroup, tempdir,
                                            outdir, casename, model, variables)
                         results_list.append(outfile)
-
     else:
         results_list = [fname.filename for fname in filelist]
     # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #
+    # check if file list is too long, if it is chunk it up
+    if len(results_list) > 3650:
+        print('list of daily means is very long, chunking into sub files')
+    chunked_list = chunks(results_list, 365)
+    results_list = []
+    for i, chunk in enumerate(chunked_list):
+        outfile = os.path.join(tempdir, 'chunk.{0}.nc'.format(i))
+        nco.ncrcat(input=chunk, output=outfile, options='-h')
+        results_list.append(outfile)
+    # ---------------------------------------------------------------- #
+
+    # ---------------------------------------------------------------- #
     # Combine monthly means into a single timeseries
-    format = '%Y%m'
+    format = '%Y%m%d'
     start = startdate.strftime(format)
     end = enddate.strftime(format)
     filename = "{0}.{1}.hdm.{2}-{3}.nc".format(casename, model, start, end)
@@ -205,11 +224,11 @@ def daily_mean_timeseries(filelist, options, variables=None):
 
 def day_mean(year, month, day, dgroup, tempdir, outdir, casename, model,
              variables):
-    filename = "{0}.{1}.hdm.{2}-{3}-{4}.nc".format(casename, model, year,
-                                                   month, day)
+    filename = "{0}.{1}.hdm.{2:04}-{3:02}-{4:02}.nc".format(casename, model,
+                                                            year, month, day)
     inputs = [fname.filename for fname in dgroup]
     outfile = os.path.join(tempdir, filename)
-    nco.ncra(input=inputs, output=outfile, variable=variables)
+    nco.ncra(input=inputs, output=outfile, variable=variables, options='-h')
     return outfile
 
 
@@ -281,6 +300,9 @@ def monthly_mean_timeseries(filelist, options, variables=None):
                                            variables))
             pool.close()
             pool.join()
+
+            # make sure the results_list is sorted
+            results_list.sort(key=lambda x: x.filedate)
         else:
             for year, ygroup in groupby(filelist, lambda x: x.filedate.year):
                 for month, mgroup in groupby(ygroup,
@@ -294,7 +316,7 @@ def monthly_mean_timeseries(filelist, options, variables=None):
 
     # ---------------------------------------------------------------- #
     # Combine monthly means into a single timeseries
-    format = '%Y%m%d'
+    format = '%Y%m'
     start = startdate.strftime(format)
     end = enddate.strftime(format)
     filename = "{0}.{1}.hmm.{2}-{3}.nc".format(casename, model, start, end)
@@ -308,11 +330,11 @@ def monthly_mean_timeseries(filelist, options, variables=None):
 
 def month_mean(year, month, mgroup, tempdir, outdir, casename, model,
                variables):
-    filename = "{0}.{1}.hmm.{2}-{3}.nc".format(casename, model,
-                                               year, month)
+    filename = "{0}.{1}.hmm.{2:04}-{3:02}.nc".format(casename, model,
+                                                     year, month)
     inputs = [fname.filename for fname in mgroup]
     outfile = os.path.join(tempdir, filename)
-    nco.ncra(input=inputs, output=outfile, variable=variables)
+    nco.ncra(input=inputs, output=outfile, variable=variables, options='-h')
     return outfile
 
 
