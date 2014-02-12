@@ -4,11 +4,11 @@ means.py
 """
 import os
 from itertools import groupby
-from share import dpm, next_month, next_day, prev_month, prev_day
+from share import dpm, next_month, next_day, prev_month, prev_day, chunks
 from nco import Nco
 
 
-def mean_monthly_diurnal_cycle(filelist, options, variables=None):
+def monthly_mean_diurnal_cycle(filelist, options, variables=None):
     """
     Creates a series of netcdf files for each year, month, and hour
     Note: only accepts hourly inputs
@@ -61,12 +61,13 @@ def mean_monthly_diurnal_cycle(filelist, options, variables=None):
     for year, ygroup in groupby(filelist, lambda x: x.filedate.year):
         for month, mgroup in groupby(ygroup, lambda x: x.filedate.month):
             for hour, hgroup in groupby(mgroup, lambda x: x.filedate.hour):
-                filename = "{0}.{1}.hmmdc.{2}-{3}-{4}.nc".format(casename,
+                filename = "{0}.{1}.hmmdc.{2:04}-{3:02}-{4:02}.nc".format(casename,
                                                                  model, year,
                                                                  month, hour)
                 inputs = [fname.filename for fname in hgroup]
                 outfile = os.path.join(outdir, filename)
-                nco.ncra(input=inputs, ouput=outfile, variable=variables)
+                nco.ncra(input=inputs, output=outfile, variable=variables,
+			 options='-h')
                 outfiles.append(outfile)
     # ---------------------------------------------------------------- #
     return outfiles
@@ -126,27 +127,41 @@ def daily_mean_timeseries(filelist, options, variables=None):
         for year, ygroup in groupby(filelist, lambda x: x.filedate.year):
             for month, mgroup in groupby(ygroup, lambda x: x.filedate.month):
                 for day, dgroup in groupby(mgroup, lambda x: x.filedate.day):
-                    filename = "{0}.{1}.hdm.{2}-{3}-{4}.nc".format(casename,
+                    filename = "{0}.{1}.hdm.{2:04}-{3:02}-{4:02}.nc".format(casename,
                                                                    model,
                                                                    year, month,
                                                                    day)
                     inputs = [fname.filename for fname in dgroup]
                     outfile = os.path.join(tempdir, filename)
-                    nco.ncra(input=inputs, ouput=outfile, variable=variables)
+                    nco.ncra(input=inputs, output=outfile, variable=variables,
+			     options='-h')
                     daily_means.append(outfile)
     else:
         daily_means = [fname.filename for fname in filelist]
     # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #
+    # check if file list is too long, if it is chunk it up
+    if len(daily_means) > 3650:
+        print('list of daily means is very long, chunking into sub files')
+	chunked_list = chunks(daily_means, 365)
+	daily_means = []
+	for i, chunk in enumerate(chunked_list):
+	    outfile = os.path.join(tempdir, 'chunk.{0}.nc'.format(i))
+	    nco.ncrcat(input=chunk, output=outfile, options='-h')
+	    daily_means.append(outfile) 
+    # ---------------------------------------------------------------- #
+
+    # ---------------------------------------------------------------- #
     # Combine monthly means into a single timeseries
-    format = '%Y%m'
+    format = '%Y%m%d'
     start = startdate.strftime(format)
     end = enddate.strftime(format)
     filename = "{0}.{1}.hdm.{2}-{3}.nc".format(casename, model, start, end)
     outfile = os.path.join(outdir, filename)
-    print('Daily mean timeseries file: {}'.format(outfile))
-    nco.ncrcat(input=daily_means, ouput=outfile, variable=variables)
+    print('Daily mean timeseries file: {0}'.format(outfile))
+    nco.ncrcat(input=daily_means, output=outfile, variable=variables,
+	      options='-h')
     # ---------------------------------------------------------------- #
     return outfile
 
@@ -154,6 +169,7 @@ def daily_mean_timeseries(filelist, options, variables=None):
 def monthly_mean_timeseries(filelist, options, variables=None):
     """ Create a timeseries of monthly means"""
     nco = Nco(overwrite=True)
+
     print('Making monthly mean timeseries')
 
     # ---------------------------------------------------------------- #
@@ -208,11 +224,12 @@ def monthly_mean_timeseries(filelist, options, variables=None):
     if timestep != 'monthly':
         for year, ygroup in groupby(filelist, lambda x: x.filedate.year):
             for month, mgroup in groupby(ygroup, lambda x: x.filedate.month):
-                filename = "{0}.{1}.hmm.{2}-{3}.nc".format(casename, model,
+                filename = "{0}.{1}.hmm.{2:04}-{3:02}.nc".format(casename, model,
                                                            year, month)
                 inputs = [fname.filename for fname in mgroup]
                 outfile = os.path.join(tempdir, filename)
-                nco.ncra(input=inputs, ouput=outfile, variable=variables)
+                nco.ncra(input=inputs, output=outfile, variable=variables,
+			 options='-h')
                 monthly_means.append(outfile)
     else:
         monthly_means = [fname.filename for fname in filelist]
@@ -220,12 +237,13 @@ def monthly_mean_timeseries(filelist, options, variables=None):
 
     # ---------------------------------------------------------------- #
     # Combine monthly means into a single timeseries
-    format = '%Y%m%d'
+    format = '%Y%m'
     start = startdate.strftime(format)
     end = enddate.strftime(format)
     filename = "{0}.{1}.hmm.{2}-{3}.nc".format(casename, model, start, end)
     outfile = os.path.join(outdir, filename)
-    print('Monthly mean timeseries file: {}'.format(outfile))
-    nco.ncrcat(input=monthly_means, ouput=outfile, variable=variables)
+    print('Monthly mean timeseries file: {0}'.format(outfile))
+    nco.ncrcat(input=monthly_means, output=outfile, variable=variables,
+	      options='-h')
     # ---------------------------------------------------------------- #
     return outfile

@@ -146,7 +146,7 @@ def process_run(filelist, config_dict):
     if abs(options['timestamp_offset']) > 0:
         if numofproc > 1:
             print('Running adjust_timestamp: {0} processes'.format(numofproc))
-            filechunks = share.chunks(filelist, numofproc)
+            filechunks = share.partition(filelist, numofproc)
             pool = multiprocessing.Pool(numofproc)
 
             kwds = {'timestep': output_preset,
@@ -157,10 +157,13 @@ def process_run(filelist, config_dict):
 
             for chunk in filechunks:
                 pool.apply_async(adjust_timestamp, callback=store_result,
-                                 args=chunk, kwds=kwds)
+                                 args=(chunk, ), kwds=kwds)
             pool.close()
             pool.join()
+	    print('Done with multiprocessing step')
+	    assert len(filelist) == len(results_list)
             filelist = results_list
+	    filelist.sort(key=lambda r: r.filedate)
         else:
             filelist = adjust_timestamp(filelist,
                                         timestep=output_preset,
@@ -180,20 +183,20 @@ def process_run(filelist, config_dict):
     # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #
+    # Calculate monthly mean timeseries
+    function = 'monthly_mean_timeseries'
+    varlist = config_dict[output_preset]['monthly_mean_timeseries']
+    results[function] = means.monthly_mean_timeseries(filelist, options,
+                                                      variables=varlist)
+    # ---------------------------------------------------------------- #
+
+    # ---------------------------------------------------------------- #
     # Calculate daily mean timeseries
     if output_preset in ['daily', 'hourly']:
         function = 'daily_mean_timeseries'
         varlist = config_dict[output_preset]['daily_mean_timeseries']
         results[function] = means.daily_mean_timeseries(filelist, options,
                                                         variables=varlist)
-    # ---------------------------------------------------------------- #
-
-    # ---------------------------------------------------------------- #
-    # Calculate monthly mean timeseries
-    function = 'monthly_mean_timeseries'
-    varlist = config_dict[output_preset]['monthly_mean_timeseries']
-    results[function] = means.monthly_mean_timeseries(filelist, options,
-                                                      variables=varlist)
     # ---------------------------------------------------------------- #
     return results
 
@@ -213,7 +216,7 @@ def process_final(results, config_dict):
     if config_dict['options']['clean']:
         tempdir = directories['temp']
         share.clean_dir(tempdir)
-        print("Cleaned up temporary directory: {}".format(tempdir))
+        print("Cleaned up temporary directory: {0}".format(tempdir))
     # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #
@@ -228,17 +231,17 @@ def process_final(results, config_dict):
     # Report on what we did
     print('Results from rasm_post_process.py:')
     for key, val in results.iteritems():
-        print("{}: {}".format(key, val))
+        print("{0}: {1}".format(key, val))
     print("\n")
 
     print('Variables included in each level of analysis were:')
     for key, val in config_dict[output_preset].iteritems():
-        print("{}: {}".format(key, val))
+        print("{0}: {1}".format(key, val))
     print("\n")
 
     print('Completed rasm_post_process.py.  Options were:')
     for key, val in config_dict['options'].iteritems():
-        print("{}: {}".format(key, val))
+        print("{0}: {1}".format(key, val))
     print("\n")
 
     print('tarfile is here: {0}'.format(tarfile_name))
@@ -282,7 +285,7 @@ def process_command_line():
 def store_result(result):
     # This is called whenever foo_pool(i) returns a result.
     # result_list is modified only by the main process, not the pool workers.
-    results_list.append(result)
+    results_list.extend(result)
 # -------------------------------------------------------------------- #
 
 

@@ -73,7 +73,7 @@ def adjust_timestamp(filelist,
                      calendar='standard'):
     """Adjust the timestep for all of the input files """
     nco = Nco()
-
+    print('Adjusting timestamp for {0} files...'.format(len(filelist)))
     newfilelist = []
     # ---------------------------------------------------------------- #
     #

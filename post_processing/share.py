@@ -48,10 +48,10 @@ class Histfile(object):
         self.second = self.filedate.second
 
     def __str__(self):
-        return "History File: {}".format(self.filename)
+        return "History File: {0}".format(self.filename)
 
     def __repr__(self):
-        return "History File: {}".format(self.filename)
+        return "History File: {0}".format(self.filename)
 
 
 def argsort(seq):
@@ -118,7 +118,7 @@ def clean_dir(directory):
     """ Clean all files in a directory but leave the directory"""
     for file_name in os.listdir(directory):
         file_path = os.path.join(directory, file_name)
-        print("----->"+file_path)
+        print("cleaning -----> {0}".format(file_path))
 
         clean_file(file_path)
     return
@@ -213,12 +213,12 @@ def custom_strptime(date_string, format):
         # do the custom parsing
         # (for now assume that the format is case.mod.avgs.%Y-%m-%d-%s.suffix)
         d = re.split('[._-]', date_string)
-        year = int(d[3])
-        month = int(d[4])
-        day = int(d[5])
+        year = int(d[-5])
+        month = int(d[-4])
+        day = int(d[-3])
 
         datetimeobj = datetime.datetime(year, month, day) + \
-            datetime.timedelta(seconds=int(d[6]))
+            datetime.timedelta(seconds=int(d[-2]))
 
     else:
         # just use the datetime module
@@ -255,7 +255,14 @@ def make_tarfile(output_filename, source_dir):
         tar.add(source_dir, arcname=os.path.basename(source_dir))
 
 
+def partition(lst, n):
+    division = len(lst) / float(n)
+    return [ lst[int(round(division * i)): int(round(division * (i + 1)))] for i in xrange(n) ]
+
+
 def chunks(l, n):
     """ Yield successive n-sized chunks from l."""
-    for i in xrange(0, len(l), n):
-        yield l[i:i+n]
+    #for i in xrange(0, len(l), n):
+    #    yield l[i:i+n]
+    return [l[i:i+n] for i in range(0, len(l), n)]
+
