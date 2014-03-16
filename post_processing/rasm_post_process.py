@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 """RASM Postprocessing script for VIC/RVIC/Coupler fields
 
 The script does the following to a series of netCDF files:

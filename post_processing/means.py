@@ -164,23 +164,24 @@ def daily_mean_timeseries(filelist, options, variables=None):
 
     # ---------------------------------------------------------------- #
     # Create daily means
-    global results_list
-    results_list = []
+    print('timestep is {0}'.format(timestep))
     if timestep == 'hourly':
+        global results_list
+        results_list = []
         pool = multiprocessing.Pool(numofproc)
         for year, ygroup in groupby(filelist, ykeyfunc):
             ylist = list(ygroup)
             ylist.sort(key=mkeyfunc)
             for month, mgroup in groupby(ylist, mkeyfunc):
                 mlist = list(mgroup)
-                mlist.sort(key=hkeyfunc)
+                mlist.sort(key=dkeyfunc)
                 for day, dgroup in groupby(mlist, dkeyfunc):
                     dlist = list(dgroup)
                     dlist.sort(key=dkeyfunc)
                     pool.apply_async(day_mean,
                                      callback=store_result,
-                                     args=(year, month, dlist,
-                                           tempdir, outdir, casename,
+                                     args=(year, month, day, dlist,
+                                           tempdir, casename,
                                            model, variables))
         pool.close()
         pool.join()
@@ -200,12 +201,13 @@ def daily_mean_timeseries(filelist, options, variables=None):
     results_list = []
     for i, chunk in enumerate(chunked_list):
         outfile = os.path.join(tempdir, 'chunk.{0}.nc'.format(i))
-        nco.ncrcat(input=chunk, output=outfile, history=True)
+        nco.ncrcat(input=chunk, output=outfile, history=True, 
+                   omp_num_threads=numofproc)
         results_list.append(outfile)
     # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #
-    # Combine monthly means into a single timeseries
+    # Combine daily means into a single timeseries
     format = '%Y%m%d'
     start = startdate.strftime(format)
     end = enddate.strftime(format)
@@ -218,7 +220,7 @@ def daily_mean_timeseries(filelist, options, variables=None):
     return outfile
 
 
-def day_mean(year, month, day, dlist, tempdir, outdir, casename, model,
+def day_mean(year, month, day, dlist, tempdir, casename, model,
              variables):
     filename = "{0}.{1}.hdm.{2:04}-{3:02}-{4:02}.nc".format(casename, model,
                                                             year, month, day)
