@@ -23,7 +23,7 @@ import glob
 from nco import Nco
 nco = Nco()
 from share import dpm, HOURSPERDAY, MINSPERDAY, SECSPERDAY, MONTHSPERYEAR
-from share import Histfile, custom_strftime, clean_file
+from share import Histfile, custom_strftime, clean_file, MACH_OPTS
 
 
 def main():
@@ -233,7 +233,8 @@ def adjust_timestamp(filelist,
         print('{0}-->{1}'.format(filename, newfilename))
         nco.ncap2(input=filename,
                   output=newfilename,
-                  script='time=time+{0}'.format(td))
+                  script='time=time+{0}'.format(td),
+                  **MACH_OPTS)
 
         options = []
         if time_units:
@@ -244,7 +245,8 @@ def adjust_timestamp(filelist,
         options.extend(['-a', 'type_preferred,time,o,c,int'])
         options.extend(['-a', 'title,global,o,c,{0}'.format(newfilename)])
 
-        nco.ncatted(input=newfilename, output=newfilename, options=options)
+        nco.ncatted(input=newfilename, output=newfilename, options=options,
+                    **MACH_OPTS)
 
         # Pack up fileobj
         fileobj.filename = newfilename

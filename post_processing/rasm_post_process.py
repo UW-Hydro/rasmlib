@@ -206,6 +206,7 @@ def process_final(results, config_dict):
     """ """
 
     print('Finalizing rasm_post_process.py\n')
+    casename = config_dict['options']['casename']
     output_preset = config_dict['options']['output_preset']
     component = config_dict['options']['component']
     directories = config_dict['options']['directories']
@@ -223,7 +224,7 @@ def process_final(results, config_dict):
     # ---------------------------------------------------------------- #
     # Make a compressed tar.gz file from the archive
     tarfile_name = os.path.join(processed_case_dir,
-                                "{0}.tar.gz".format(component))
+                                "{0}.{1}.tar.gz".format(casename, component))
     print('Making tarfile now: {0}'.format(tarfile_name))
     share.make_tarfile(tarfile_name, processed_comp_dir)
     # ---------------------------------------------------------------- #
