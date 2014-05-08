@@ -21,19 +21,17 @@ MONTHSPERYEAR = 12
 
 NCOFORMAT = "%Y-%m-%d %H:%M:%S"
 
-__GARNET_OPTS__ = {'overwrite': True}
+__GARNET_OPTS__ = {}
 
-__SPIRIT_OPTS__ = {'overwrite': True,
-                   'no_tmp_fl': True,
+__SPIRIT_OPTS__ = {'no_tmp_fl': True,
                    'ram_all': True,
                    'omp_num_threads': 4}
 
-__HYDRA_OPTS__ = {'overwrite': True,
-                  'no_tmp_fl': True,
+__HYDRA_OPTS__ = {'no_tmp_fl': True,
                   'ram_all': True,
                   'omp_num_threads': 2}
 
-host = socket.gethostname()
+host = os.getenv('HOST', socket.gethostname())
 
 if 'spirit' in host.lower():
     MACH_OPTS = __SPIRIT_OPTS__
