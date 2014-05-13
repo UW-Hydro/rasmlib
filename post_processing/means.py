@@ -196,7 +196,7 @@ def daily_mean_timeseries(filelist, options, variables=None):
 
     # ---------------------------------------------------------------- #
     # check if file list is too long, if it is chunk it up
-    if len(results_list) > 3650:
+    if len(results_list) > 1000:
         print('list of daily means is very long, chunking into sub files')
         chunked_list = chunks(results_list, 365)
         results_list = []
