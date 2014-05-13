@@ -24,8 +24,7 @@ NCOFORMAT = "%Y-%m-%d %H:%M:%S"
 __GARNET_OPTS__ = {}
 
 __SPIRIT_OPTS__ = {'no_tmp_fl': True,
-                   'ram_all': True,
-                   'omp_num_threads': 4}
+                   'ram_all': True}
 
 __HYDRA_OPTS__ = {'no_tmp_fl': True,
                   'ram_all': True,
