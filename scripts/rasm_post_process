@@ -22,9 +22,9 @@ import argparse
 import glob
 import os
 import multiprocessing
-import means
-import share
-from adjust_timestamp import adjust_timestamp
+from rasmlib.post_processing import means
+from rasmlib.post_processing import share
+from rasmlib.post_processing.adjust_timestamp import adjust_timestamp
 
 results_list = []
 

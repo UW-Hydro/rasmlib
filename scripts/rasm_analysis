@@ -1,0 +1,85 @@
+#!/usr/bin/env python
+"""
+analysis library wrapper for RASM project
+"""
+
+from __future__ import print_function
+import argparse
+import rasmlib.analysis.tools.io as io
+
+
+# Dynamic imports
+def import_from(module, name):
+    module = __import__(module, fromlist=[name])
+    return getattr(module, name)
+
+
+# --------------------------------------------------------------------------- #
+# Parse arguments
+parser = argparse.ArgumentParser()
+parser.add_argument("config", type=str, help="Input Configuration File")
+args = parser.parse_args()
+
+config = io.read_config(args.config)
+main = config.pop('MAIN')
+options = config.pop('OPTIONS')
+# --------------------------------------------------------------------------- #
+
+# --------------------------------------------------------------------------- #
+# read analysis namelist
+data_files = io.get_data_files_namelist(main['DATA_FILES_NAMELIST'])
+# --------------------------------------------------------------------------- #
+
+# --------------------------------------------------------------------------- #
+# read variables namelist
+variables = io.get_variables_namelist(main['VARIABLES_NAMELIST'])
+# --------------------------------------------------------------------------- #
+
+# --------------------------------------------------------------------------- #
+# read domain file
+domain = io.read_domain(main['DOMAIN_FILE'])
+# --------------------------------------------------------------------------- #
+
+# --------------------------------------------------------------------------- #
+# Do the analysis
+print("Starting Analysis Now")
+
+for analysis_name, analysis_dict in config.iteritems():
+
+    print("Starting {0}".format(analysis_name))
+    plugin_name = 'rasmlib.analysis.plugins.{0}'.format(analysis_dict['PLUGIN'])
+    plugin = import_from(plugin_name, 'run')
+    print("Using plugin {0}".format(plugin_name))
+
+    # ----------------------------------------------------------------------- #
+    # Get dictionary of xray datasets
+    case_names = analysis_dict.pop('CASE_NAMES')
+    if not isinstance(case_names, list):
+        case_names = [case_names]
+    compare_names = analysis_dict.pop('COMPARE_NAMES')
+    if not isinstance(compare_names, list):
+        compare_names = [compare_names]
+    analysis_vars = analysis_dict.pop('ANALYSIS_VARS')
+    if not isinstance(analysis_vars, list):
+        analysis_vars = [analysis_vars]
+    timestep = analysis_dict.pop('TIMESTEP')
+
+    cases = io.get_datasets(case_names, data_files, variables,
+                            analysis_vars, timestep)
+    compares = io.get_datasets(compare_names, data_files, variables,
+                               analysis_vars, timestep)
+    print('cases', cases)
+    print('compares', compares)
+    # ----------------------------------------------------------------------- #
+
+    # ----------------------------------------------------------------------- #
+    # Run the analysis
+    analysis_options = options.copy()
+    analysis_options.update(analysis_dict)
+
+    plugin(cases, compares, domain, **analysis_options)
+    print("Finished {0}".format(analysis_name))
+    # ----------------------------------------------------------------------- #
+
+print("Finished Analysis")
+# --------------------------------------------------------------------------- #
