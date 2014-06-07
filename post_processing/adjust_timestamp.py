@@ -231,9 +231,9 @@ def adjust_timestamp(filelist,
                                    custom_strftime(newfiledate, out_format))
 
         print('{0}-->{1}'.format(filename, newfilename))
-        nco.ncap2(input=filename,
+	nco.ncap2(input=filename,
                   output=newfilename,
-                  script='time=time+{0}'.format(td))
+                  script='"time=time+{0}"'.format(td))
         options = []
         if time_units:
             options.extend(['-a', 'units,time,o,c,"{0}"'.format(time_units)])
