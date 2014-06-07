@@ -21,9 +21,10 @@ import re
 import os
 import glob
 from nco import Nco
-nco = Nco()
+from netCDF4 import Dataset
 from share import dpm, HOURSPERDAY, MINSPERDAY, SECSPERDAY, MONTHSPERYEAR
 from share import Histfile, custom_strftime, clean_file, MACH_OPTS
+nco = Nco(**MACH_OPTS)
 
 
 def main():
@@ -72,7 +73,6 @@ def adjust_timestamp(filelist,
                      destdir=None,
                      calendar='standard'):
     """Adjust the timestep for all of the input files """
-    nco = Nco()
     print('Adjusting timestamp for {0} files...'.format(len(filelist)))
     newfilelist = []
     # ---------------------------------------------------------------- #
@@ -231,11 +231,9 @@ def adjust_timestamp(filelist,
                                    custom_strftime(newfiledate, out_format))
 
         print('{0}-->{1}'.format(filename, newfilename))
-        nco.ncap2(input=filename,
+	nco.ncap2(input=filename,
                   output=newfilename,
-                  script='time=time+{0}'.format(td),
-                  **MACH_OPTS)
-
+                  script='"time=time+{0}"'.format(td))
         options = []
         if time_units:
             options.extend(['-a', 'units,time,o,c,"{0}"'.format(time_units)])
@@ -245,8 +243,7 @@ def adjust_timestamp(filelist,
         options.extend(['-a', 'type_preferred,time,o,c,int'])
         options.extend(['-a', 'title,global,o,c,{0}'.format(newfilename)])
 
-        nco.ncatted(input=newfilename, output=newfilename, options=options,
-                    **MACH_OPTS)
+        nco.ncatted(input=newfilename, output=newfilename, options=options)
 
         # Pack up fileobj
         fileobj.filename = newfilename
@@ -262,11 +259,10 @@ def adjust_timestamp(filelist,
 
 
 def get_time_units(filename):
-    """parse the output of ncdump to find the time units"""
-    out = nco.ncdump(input=filename, options='-h')
-    time_units = re.search('time:units = "(.*)" ;', out).group(1)
-
-    return time_units.split()
+    f = Dataset(filename)
+    time_units = f.variables['time'].units
+    f.close()
+    return time_units
 
 
 def process_command_line():
