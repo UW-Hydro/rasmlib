@@ -79,7 +79,7 @@ def adjust_timestamp(filelist,
     #
     if timestep == 'monthly':
         prefix = fname_format.split("%")[0]
-        out_format = prefix+"%%Y-%%m.nc"
+        out_format = prefix+"%Y-%m.nc"
     else:
         out_format = fname_format
     # ---------------------------------------------------------------- #
