@@ -74,6 +74,7 @@ def adjust_timestamp(filelist,
                      calendar='standard'):
     """Adjust the timestep for all of the input files """
     print('Adjusting timestamp for {0} files...'.format(len(filelist)))
+    print('Adjusting by {0} timesteps of size {1}'.format(nsteps, timestep))
     newfilelist = []
     # ---------------------------------------------------------------- #
     #
@@ -97,13 +98,15 @@ def adjust_timestamp(filelist,
     # Determine how to deal with the time axis
     # Amount to move the time axis
     if "days" in time_units:
-        unit_mult = 1
+        unit_mult = 1.
     elif "hours" in time_units:
         unit_mult = HOURSPERDAY
     elif "minutes" in time_units:
         unit_mult = MINSPERDAY
     elif "seconds" in time_units:
         unit_mult = SECSPERDAY
+    else:
+        unit_mult = 1.
     # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #
@@ -115,7 +118,7 @@ def adjust_timestamp(filelist,
               from 0000-1-1 to 0001-01-01 0:0:0")
         unit_offset = sum(days_per_month)*-1
     else:
-        time_units = False
+        time_units = None
         unit_offset = 0.0
     # ---------------------------------------------------------------- #
 
@@ -135,10 +138,10 @@ def adjust_timestamp(filelist,
             if timestep == 'monthly':
                 month += nsteps
 
-                if (month+nsteps) < 1:
+                if month < 1:
                     year -= 1
                     month += MONTHSPERYEAR
-                elif (month+nsteps) > MONTHSPERYEAR:
+                elif month > MONTHSPERYEAR:
                     year += 1
                     month -= MONTHSPERYEAR
 
@@ -160,23 +163,25 @@ def adjust_timestamp(filelist,
             if timestep == 'monthly':
                 day = 1
                 hour = 0
-                # if moving forward, get length of month now
-                if nsteps > 0:
-                    td = (days_per_month[month] + unit_offset) * unit_mult
-                # determine new month and year
-
-                month += nsteps
-
-                if month < 1:
-                    year -= 1
-                    month += MONTHSPERYEAR
-                elif month > MONTHSPERYEAR:
-                    year += 1
-                    month -= MONTHSPERYEAR
-
-                # if moving backwards, get length of month now
-                if nsteps < 0:
-                    td = (days_per_month[month] + unit_offset) * unit_mult
+                
+                # get the number of days between the old date and the new one
+                days = 0
+                for i in xrange(abs(nsteps)):
+	            if nsteps > 0:
+                        days += days_per_month[month]
+                        month += 1
+                    else:
+                        days -= days_per_month[month-1]
+                        month -= 1
+                        
+                    if month < 1:
+                        year -= 1
+                        month += MONTHSPERYEAR
+                    elif month > MONTHSPERYEAR:
+                        year += 1
+                        month -= MONTHSPERYEAR
+               
+                td = (days + unit_offset) * unit_mult
 
             elif timestep == 'daily':
                 # determine new day, month and year
@@ -225,7 +230,7 @@ def adjust_timestamp(filelist,
                 # determine offset for time axis
                 td = (nsteps + unit_offset) * unit_mult
 
-            newfiledate = datetime.datetime(year, month, day, int(hour))
+            newfiledate = datetime.datetime(int(year), int(month), int(day), int(hour))
 
         newfilename = os.path.join(destdir,
                                    custom_strftime(newfiledate, out_format))
@@ -233,7 +238,7 @@ def adjust_timestamp(filelist,
         print('{0}-->{1}'.format(filename, newfilename))
 	nco.ncap2(input=filename,
                   output=newfilename,
-                  script='"time=time+{0}"'.format(td))
+                  script='"time=time{0:+}"'.format(td))
         options = []
         if time_units:
             options.extend(['-a', 'units,time,o,c,"{0}"'.format(time_units)])
