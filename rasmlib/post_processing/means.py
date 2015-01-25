@@ -6,8 +6,9 @@ import os
 import multiprocessing
 from itertools import groupby
 from share import dpm, next_month, next_day, prev_month, prev_day, chunks
+from share import MACH_OPTS
 from nco import Nco
-nco = Nco(debug=True, no_tmp_fl=True, ram_all=True)
+nco = Nco(**MACH_OPTS)
 
 global results_list
 results_list = []
@@ -195,15 +196,18 @@ def daily_mean_timeseries(filelist, options, variables=None):
 
     # ---------------------------------------------------------------- #
     # check if file list is too long, if it is chunk it up
-    if len(results_list) > 3650:
+    if len(results_list) > 1000:
         print('list of daily means is very long, chunking into sub files')
-    chunked_list = chunks(results_list, 365)
-    results_list = []
-    for i, chunk in enumerate(chunked_list):
-        outfile = os.path.join(tempdir, 'chunk.{0}.nc'.format(i))
-        nco.ncrcat(input=chunk, output=outfile, history=True, 
-                   omp_num_threads=numofproc)
-        results_list.append(outfile)
+        chunked_list = chunks(results_list, 365)
+        results_list = []
+        pool = multiprocessing.Pool(numofproc)
+        for i, chunk in enumerate(chunked_list):
+            outfile = os.path.join(tempdir, 'chunk.{0}.nc'.format(i))
+            pool.apply_async(cat_chunk,
+                             args=(chunk, outfile))
+            results_list.append(outfile)
+        pool.close()
+        pool.join()
     # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #
@@ -214,10 +218,14 @@ def daily_mean_timeseries(filelist, options, variables=None):
     filename = "{0}.{1}.hdm.{2}-{3}.nc".format(casename, model, start, end)
     outfile = os.path.join(outdir, filename)
     print('Daily mean timeseries file: {0}'.format(outfile))
-    nco.ncrcat(input=results_list, output=outfile, variable=variables,
-               omp_num_threads=numofproc)
+    nco.ncrcat(input=results_list, output=outfile, variable=variables)
     # ---------------------------------------------------------------- #
     return outfile
+
+
+def cat_chunk(chunk, outfile):
+    nco.ncrcat(input=chunk, output=outfile, history=True)
+    return
 
 
 def day_mean(year, month, day, dlist, tempdir, casename, model,
@@ -318,8 +326,7 @@ def monthly_mean_timeseries(filelist, options, variables=None):
     filename = "{0}.{1}.hmm.{2}-{3}.nc".format(casename, model, start, end)
     outfile = os.path.join(outdir, filename)
     print('Monthly mean timeseries file: {0}'.format(outfile))
-    nco.ncrcat(input=results_list, output=outfile, variable=variables,
-               omp_num_threads=numofproc)
+    nco.ncrcat(input=results_list, output=outfile, variable=variables)
     # ---------------------------------------------------------------- #
     return outfile
 

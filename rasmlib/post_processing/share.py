@@ -8,6 +8,7 @@ import os
 import datetime
 import re
 import tarfile
+import socket
 from contextlib import closing
 
 HOURSPERDAY = 24.
@@ -19,6 +20,26 @@ SECSPERDAY = HOURSPERDAY * SECSPERHOUR
 MONTHSPERYEAR = 12
 
 NCOFORMAT = "%Y-%m-%d %H:%M:%S"
+
+__GARNET_OPTS__ = {}
+
+__SPIRIT_OPTS__ = {'debug': True}
+
+__HYDRA_OPTS__ = {'no_tmp_fl': True,
+                  'ram_all': True,
+                  'omp_num_threads': 2}
+
+host = os.getenv('HOST', socket.gethostname())
+
+if 'spirit' in host.lower():
+    MACH_OPTS = __SPIRIT_OPTS__
+elif 'garnet' in host.lower():
+    MACH_OPTS = __GARNET_OPTS__
+elif 'hydra' in host.lower():
+    MACH_OPTS = __HYDRA_OPTS__
+else:
+    print('unknown host, using standard NCO options')
+    MACH_OPTS = {'debug': True}
 
 dpm = {'noleap': [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
        '365_day': [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
