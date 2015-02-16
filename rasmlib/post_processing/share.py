@@ -29,8 +29,7 @@ __GARNET_OPTS__ = {}
 __SPIRIT_OPTS__ = {'debug': True}
 
 __HYDRA_OPTS__ = {'no_tmp_fl': True,
-                  'ram_all': True,
-                  'omp_num_threads': 2}
+                  'debug': True}
 
 host = os.getenv('HOST', socket.gethostname())
 

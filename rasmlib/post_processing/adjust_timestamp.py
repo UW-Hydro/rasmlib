@@ -111,7 +111,7 @@ def adjust_timestamp(filelist,
     # ---------------------------------------------------------------- #
     # Determine if we need to adjust time units
     # (only if units are "xxx since 0000-1-1 0:0:0")
-    if "0000-1-1" in time_units[2]:
+    if "0000-1-1" == time_units[2]:
         time_units = "{0} since 0001-01-01 00:00:00".format(time_units[0])
         print("adjusting netcdf base time units \
               from 0000-1-1 to 0001-01-01 00:00:00")
