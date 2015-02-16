@@ -269,9 +269,11 @@ def custom_strftime(datetimeobj, format):
         datetimedict = {'%Y': "{0:04d}".format(int(datetimeobj.year)),
                         '%m': "{0:02d}".format(int(datetimeobj.month)),
                         '%d': "{0:02d}".format(int(datetimeobj.day)),
-                        '%s': "{0:05d}".format(int(datetimeobj.hour*SECSPERHOUR
-                                    + datetimeobj.minute*SECSPERMINUTE
-                                    + datetimeobj.second))}
+                        '%s': "{0:05d}".format(int(datetimeobj.hour *
+                                               SECSPERHOUR +
+                                               datetimeobj.minute *
+                                               SECSPERMINUTE +
+                                               datetimeobj.second))}
 
         date_string = multiple_replace(datetimedict, format)
     else:
@@ -288,12 +290,10 @@ def make_tarfile(output_filename, source_dir):
 
 def partition(lst, n):
     division = len(lst) / float(n)
-    return [ lst[int(round(division * i)): int(round(division * (i + 1)))] for i in xrange(n) ]
+    return [lst[int(round(division * i)): int(round(division * (i + 1)))]
+            for i in range(n)]
 
 
 def chunks(l, n):
     """ Yield successive n-sized chunks from l."""
-    #for i in xrange(0, len(l), n):
-    #    yield l[i:i+n]
-    return [l[i:i+n] for i in range(0, len(l), n)]
-
+    return [l[i:i + n] for i in range(0, len(l), n)]
