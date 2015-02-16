@@ -15,10 +15,9 @@ import netCDF4
 import numpy as np
 from dateutil import relativedelta
 from copy import deepcopy
-from means import *
-from share import *
-from rasm_post_process import *
-from adjust_timestamp import *
+from ..means import *
+from ..share import *
+from ..adjust_timestamp import *
 
 stdtimeunits = 'days since 1990-01-01'
 badtimeunits = "days since 0000-1-1 0:0:0"
@@ -28,6 +27,7 @@ noleapcalendar = 'noleap'
 hourlydatestrformat = 'TEST.mod.ha.%Y-%m-%d-%s.nc'
 dailydatestrformat = 'TEST.mod.ha.%Y-%m-%d.nc'
 monthlydatestrformat = 'TEST.mod.ha.%Y-%m.nc'
+
 
 def random_datetime():
     year = random.choice(range(1950, 2000))
@@ -45,12 +45,12 @@ def cleandir():
 
 @pytest.fixture
 def tempdestdir():
-    return tempfile.mkdtemp(suffix='destdir')
+    return tempfile.mkdtemp(suffix='dest_dir')
 
 
 @pytest.fixture
 def tempsrcdir():
-    return tempfile.mkdtemp(suffix='srcdir')
+    return tempfile.mkdtemp(suffix='src_dir')
 
 
 @pytest.fixture
@@ -64,8 +64,8 @@ def foo_nc(random_field, tempsrcdir):
     filename = os.path.join(tempsrcdir, 'foo.nc')
     f = netCDF4.Dataset(filename, 'w')
     shape = random_field.shape
-    dim0 = f.createDimension('dim0', shape[0])
-    dim1 = f.createDimension('dim1', shape[1])
+    f.createDimension('dim0', shape[0])
+    f.createDimension('dim1', shape[1])
     time = f.createDimension('time', 1)
     var = f.createVariable('random', 'f8', ('time', 'dim0', 'dim1',))
     time = f.createVariable('time', 'f8', ('time'))
@@ -85,8 +85,8 @@ def hourly_filelist(random_field, hourlyfilenamelist, hourlydatetimelist,
         filename = os.path.join(tempsrcdir, filename)
         f = netCDF4.Dataset(filename, 'w')
         shape = random_field.shape
-        dim0 = f.createDimension('dim0', shape[0])
-        dim1 = f.createDimension('dim1', shape[1])
+        f.createDimension('dim0', shape[0])
+        f.createDimension('dim1', shape[1])
         time = f.createDimension('time', 1)
         var = f.createVariable('random', 'f8', ('time', 'dim0', 'dim1',))
         time = f.createVariable('time', 'f8', ('time'))
@@ -110,8 +110,8 @@ def daily_filelist(random_field, dailyfilenamelist, dailydatetimelist,
         filename = os.path.join(tempsrcdir, filename)
         f = netCDF4.Dataset(filename, 'w')
         shape = random_field.shape
-        dim0 = f.createDimension('dim0', shape[0])
-        dim1 = f.createDimension('dim1', shape[1])
+        f.createDimension('dim0', shape[0])
+        f.createDimension('dim1', shape[1])
         time = f.createDimension('time', 1)
         var = f.createVariable('random', 'f8', ('time', 'dim0', 'dim1',))
         time = f.createVariable('time', 'f8', ('time'))
@@ -135,8 +135,8 @@ def monthly_filelist(random_field, monthlyfilenamelist, monthlydatetimelist,
         filename = os.path.join(tempsrcdir, filename)
         f = netCDF4.Dataset(filename, 'w')
         shape = random_field.shape
-        dim0 = f.createDimension('dim0', shape[0])
-        dim1 = f.createDimension('dim1', shape[1])
+        f.createDimension('dim0', shape[0])
+        f.createDimension('dim1', shape[1])
         time = f.createDimension('time', 1)
         var = f.createVariable('random', 'f8', ('time', 'dim0', 'dim1',))
         time = f.createVariable('time', 'f8', ('time'))
@@ -161,8 +161,8 @@ def daily_filelist_badtimeunits(random_field, dailyfilenamelist,
         filename = os.path.join(tempsrcdir, filename)
         f = netCDF4.Dataset(filename, 'w')
         shape = random_field.shape
-        dim0 = f.createDimension('dim0', shape[0])
-        dim1 = f.createDimension('dim1', shape[1])
+        f.createDimension('dim0', shape[0])
+        f.createDimension('dim1', shape[1])
         time = f.createDimension('time', 1)
         var = f.createVariable('random', 'f8', ('time', 'dim0', 'dim1',))
         time = f.createVariable('time', 'f8', ('time'))
@@ -187,8 +187,8 @@ def daily_filelist_stdcal(random_field, dailyfilenamelist, dailydatetimelist,
         filename = os.path.join(tempsrcdir, filename)
         f = netCDF4.Dataset(filename, 'w')
         shape = random_field.shape
-        dim0 = f.createDimension('dim0', shape[0])
-        dim1 = f.createDimension('dim1', shape[1])
+        f.createDimension('dim0', shape[0])
+        f.createDimension('dim1', shape[1])
         time = f.createDimension('time', 1)
         var = f.createVariable('random', 'f8', ('time', 'dim0', 'dim1',))
         time = f.createVariable('time', 'f8', ('time'))
@@ -206,14 +206,14 @@ def daily_filelist_stdcal(random_field, dailyfilenamelist, dailydatetimelist,
 @pytest.fixture
 def hourlydatetimelist():
     """list of hourly datetimes"""
-    return [datetime.datetime(2000, 1, 1) + i*datetime.timedelta(hours=1)
+    return [datetime.datetime(2000, 1, 1) + i * datetime.timedelta(hours=1)
             for i in range(750)]
 
 
 @pytest.fixture
 def dailydatetimelist():
     """list of daily datetimes"""
-    return [datetime.datetime(2000, 1, 1) + i*datetime.timedelta(days=1)
+    return [datetime.datetime(2000, 1, 1) + i * datetime.timedelta(days=1)
             for i in range(31)]
 
 
@@ -268,13 +268,15 @@ def test_next_month_std():
 def test_prev_month_year():
     """test that prev_month aross a year boundary works"""
     d1 = datetime.datetime(2000, 1, 30)
-    assert prev_month(d1, noleapcalendar) == datetime.datetime(1999, 12, 31, 23)
+    assert prev_month(d1, noleapcalendar) == datetime.datetime(1999, 12, 31,
+                                                               23)
 
 
 def test_prev_month_std():
     """test stanadard application of prev_month"""
     d1 = datetime.datetime(2000, 11, 5)
-    assert prev_month(d1, noleapcalendar) == datetime.datetime(2000, 10, 31, 23)
+    assert prev_month(d1, noleapcalendar) == datetime.datetime(2000, 10, 31,
+                                                               23)
 
 
 def test_next_day_year():
@@ -293,13 +295,14 @@ def test_prev_day_year():
     """test that prev_day aross a year boundary works"""
     d1 = datetime.datetime(2000, 1, 1, 12)
     assert prev_day(d1, noleapcalendar) == datetime.datetime(1999, 12, 31,
-                                                       23, 59, 59)
+                                                             23, 59, 59)
 
 
 def test_prev_day_std():
     """test stanadard application of prev_day"""
     d1 = datetime.datetime(2000, 1, 5, 12)
-    assert prev_day(d1, noleapcalendar) == datetime.datetime(2000, 1, 4, 23, 59, 59)
+    assert prev_day(d1, noleapcalendar) == datetime.datetime(2000, 1, 4, 23,
+                                                             59, 59)
 
 
 def test_clean_dir():
@@ -316,7 +319,7 @@ def test_clean_file():
     """test that clean_file removes tempfile"""
     testfile = tempfile.mkstemp()[1]
     clean_file(testfile)
-    assert os.path.isfile(testfile) == False
+    assert os.path.isfile(testfile) is False
 
 
 def test_make_directories():
@@ -324,7 +327,7 @@ def test_make_directories():
     testdir = tempfile.mkdtemp()
     subdirs = ['dir1', 'dir2']
     paths = make_directories(testdir, subdirs)
-    for subdir, path in paths.iteritems():
+    for subdir, path in paths.items():
         assert os.path.isdir(path)
 
 
@@ -341,20 +344,24 @@ def test_config_type_float():
     assert val == 1.75
     assert type(val) == float
 
+
 def test_config_type_bool():
     """test that config type returns bool True, False"""
-    val = config_type('True')
-    assert val
-    assert type(val) == bool
-    val = config_type('False')
-    assert val == False
-    assert type(val) == bool
+    for string in ['true', 'True', 'TRUE', 'T']:
+        val = config_type(string)
+        assert val
+        assert type(val) == bool
+    for string in ['false', 'False', 'FALSE', 'F']:
+        val = config_type(string)
+        assert val is False
+        assert type(val) == bool
 
 
-def test_config_type_bool():
-    """test that config type returns bool None"""
-    val = config_type('None')
-    assert val == None
+def test_config_type_none():
+    """test that config type returns NoneType for None"""
+    for string in ['none', 'None', 'NONE', '']:
+        val = config_type(string)
+        assert val is None
 
 
 def test_custom_strptime(hourlyfilenamelist, hourlydatetimelist):
@@ -387,7 +394,7 @@ def test_hisfile_dates(hourlyfilenamelist, hourlydatetimelist):
 def test_get_time_units(foo_nc):
     """test get time units from ncdump (get_time_units function)"""
     foounits = get_time_units(foo_nc)
-    assert " ".join(foounits) == stdtimeunits
+    assert foounits == stdtimeunits
 
 
 def test_adjust_timestamp_h(hourly_filelist, tempsrcdir, tempdestdir):
@@ -401,6 +408,7 @@ def test_adjust_timestamp_h(hourly_filelist, tempsrcdir, tempdestdir):
                                    calendar=noleapcalendar)
     for new, old in zip(newfilelist, oldfilelist):
         assert new.filedate == old.filedate - datetime.timedelta(hours=1)
+        print('new.filename', new.filename)
         assert os.path.isfile(new.filename)
         assert os.path.split(old.filename)[0] == tempsrcdir
         assert os.path.split(new.filename)[0] == tempdestdir
@@ -479,10 +487,10 @@ def test_adjust_timestamp_badtimeunits(daily_filelist_badtimeunits,
         assert os.path.split(new.filename)[0] == tempdestdir
         assert new.filename != old.filename
         assert new_units != old_units
-        assert new_units[2] == "0001-01-01"
+        assert "0001-01-01" in new_units
+
 
 def test_read_config_file():
     """test for successful read of sample_config_file.cfg and dict return"""
     config_dict = read_config('sample_config_file.cfg')
     assert type(config_dict) == dict
-

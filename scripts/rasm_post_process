@@ -161,10 +161,11 @@ def process_run(filelist, config_dict):
                                  args=(chunk, ), kwds=kwds)
             pool.close()
             pool.join()
-	    print('Done with multiprocessing step')
-	    assert len(filelist) == len(results_list)
+            print('Done with multiprocessing step')
+            assert len(filelist) == len(results_list)
             filelist = results_list
-	    filelist.sort(key=lambda r: r.filedate)
+            filelist.sort(key=lambda r: r.filedate)
+
         else:
             filelist = adjust_timestamp(filelist,
                                         timestep=output_preset,
@@ -226,7 +227,8 @@ def process_final(results, config_dict):
     # Make a compressed tar.gz file from the archive
     if tar_dirs:
         tarfile_name = os.path.join(processed_case_dir,
-                                    "{0}.{1}.tar.gz".format(casename, component))
+                                    "{0}.{1}.tar.gz".format(casename,
+                                                            component))
         print('Making tarfile now: {0}'.format(tarfile_name))
         share.make_tarfile(tarfile_name, processed_comp_dir)
     # ---------------------------------------------------------------- #

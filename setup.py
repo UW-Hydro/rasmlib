@@ -1,4 +1,4 @@
- #!/usr/bin/env python
+#!/usr/bin/env python
 try:
     from setuptools import setup
 except:
@@ -13,7 +13,8 @@ setup(name='rasmlib',
       author='Joe Hamman',
       author_email='jhamman@hydro.washington.edu',
       install_requires=['scipy >= 0.13', 'numpy >= 1.8',
-                        'netCDF4 >= 1.0.6', 'matplotlib >= 1.3.1'],
+                        'netCDF4 >= 1.0.6', 'matplotlib >= 1.3.1',
+                        'nco >= 0.0.2'],
       url='https://github.com/jhamman/rasmlib',
       packages=['rasmlib.analysis', 'rasmlib.post_processing',
                 'rasmlib.tools'],

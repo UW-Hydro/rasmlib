@@ -17,13 +17,12 @@ http://nco.sourceforge.net
 from __future__ import print_function
 import argparse
 import datetime
-import re
 import os
 import glob
 from nco import Nco
 from netCDF4 import Dataset
-from share import dpm, HOURSPERDAY, MINSPERDAY, SECSPERDAY, MONTHSPERYEAR
-from share import Histfile, custom_strftime, clean_file, MACH_OPTS
+from .share import dpm, HOURSPERDAY, MINSPERDAY, SECSPERDAY, MONTHSPERYEAR
+from .share import Histfile, custom_strftime, clean_file, MACH_OPTS
 nco = Nco(**MACH_OPTS)
 
 
@@ -80,7 +79,7 @@ def adjust_timestamp(filelist,
     #
     if timestep == 'monthly':
         prefix = fname_format.split("%")[0]
-        out_format = prefix+"%Y-%m.nc"
+        out_format = prefix + "%Y-%m.nc"
     else:
         out_format = fname_format
     # ---------------------------------------------------------------- #
@@ -91,7 +90,7 @@ def adjust_timestamp(filelist,
 
     # ---------------------------------------------------------------- #
     # Time units (list)
-    time_units = get_time_units(filelist[0].filename)
+    time_units = get_time_units(filelist[0].filename).split()
     # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #
@@ -113,10 +112,10 @@ def adjust_timestamp(filelist,
     # Determine if we need to adjust time units
     # (only if units are "xxx since 0000-1-1 0:0:0")
     if "0000-1-1" in time_units[2]:
-        time_units = "{0} since 0001-01-01 0:0:0".format(time_units[0])
+        time_units = "{0} since 0001-01-01 00:00:00".format(time_units[0])
         print("adjusting netcdf base time units \
-              from 0000-1-1 to 0001-01-01 0:0:0")
-        unit_offset = sum(days_per_month)*-1
+              from 0000-1-1 to 0001-01-01 00:00:00")
+        unit_offset = -1 * sum(days_per_month)
     else:
         time_units = None
         unit_offset = 0.0
@@ -163,24 +162,24 @@ def adjust_timestamp(filelist,
             if timestep == 'monthly':
                 day = 1
                 hour = 0
-                
+
                 # get the number of days between the old date and the new one
                 days = 0
-                for i in xrange(abs(nsteps)):
-	            if nsteps > 0:
+                for i in range(abs(nsteps)):
+                    if nsteps > 0:
                         days += days_per_month[month]
                         month += 1
                     else:
-                        days -= days_per_month[month-1]
+                        days -= days_per_month[month - 1]
                         month -= 1
-                        
+
                     if month < 1:
                         year -= 1
                         month += MONTHSPERYEAR
                     elif month > MONTHSPERYEAR:
                         year += 1
                         month -= MONTHSPERYEAR
-               
+
                 td = (days + unit_offset) * unit_mult
 
             elif timestep == 'daily':
@@ -230,13 +229,14 @@ def adjust_timestamp(filelist,
                 # determine offset for time axis
                 td = (nsteps + unit_offset) * unit_mult
 
-            newfiledate = datetime.datetime(int(year), int(month), int(day), int(hour))
+            newfiledate = datetime.datetime(int(year), int(month),
+                                            int(day), int(hour))
 
         newfilename = os.path.join(destdir,
                                    custom_strftime(newfiledate, out_format))
 
         print('{0}-->{1}'.format(filename, newfilename))
-	nco.ncap2(input=filename,
+        nco.ncap2(input=filename,
                   output=newfilename,
                   script='"time=time{0:+}"'.format(td))
         options = []

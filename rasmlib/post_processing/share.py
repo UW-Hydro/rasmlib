@@ -3,7 +3,10 @@ share.py
 """
 
 from __future__ import print_function
-from ConfigParser import SafeConfigParser
+try:
+    from ConfigParser import SafeConfigParser
+except ImportError:
+    from configparser import SafeConfigParser
 import os
 import datetime
 import re
@@ -39,7 +42,7 @@ elif 'hydra' in host.lower():
     MACH_OPTS = __HYDRA_OPTS__
 else:
     print('unknown host, using standard NCO options')
-    MACH_OPTS = {'debug': True}
+    MACH_OPTS = {}
 
 dpm = {'noleap': [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
        '365_day': [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],

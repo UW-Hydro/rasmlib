@@ -5,8 +5,8 @@ means.py
 import os
 import multiprocessing
 from itertools import groupby
-from share import dpm, next_month, next_day, prev_month, prev_day, chunks
-from share import MACH_OPTS
+from .share import dpm, next_month, next_day, prev_month, prev_day, chunks
+from .share import MACH_OPTS
 from nco import Nco
 nco = Nco(**MACH_OPTS)
 
