@@ -16,8 +16,6 @@ setup(name='rasmlib',
                         'netCDF4 >= 1.0.6', 'matplotlib >= 1.3.1',
                         'nco >= 0.0.2'],
       url='https://github.com/jhamman/rasmlib',
-      packages=['rasmlib.analysis', 'rasmlib.post_processing',
-                'rasmlib.tools'],
-      py_modules=['rasmlib.analysis.plugins'],
+      packages=['rasmlib', 'rasmlib.analysis', 'rasmlib.post_processing'],
       scripts=['scripts/rasm_analysis', 'scripts/rasm_post_process'])
 # -------------------------------------------------------------------- #
