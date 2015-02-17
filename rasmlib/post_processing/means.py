@@ -268,7 +268,7 @@ def monthly_mean_timeseries(filelist, options, variables=None):
     adjust_file_list = False
     if timestep == 'hourly':
         if (startdate.day != 1) and (startdate.hour != 0):
-            startdate = next_month(startdate)
+            startdate = next_month(startdate, calendar)
             adjust_file_list = True
         maxday = dpm[calendar][enddate.month]
         if (enddate.day != maxday) and (enddate.hour != 23):
@@ -276,7 +276,7 @@ def monthly_mean_timeseries(filelist, options, variables=None):
             adjust_file_list = True
     elif timestep == 'daily':
         if (startdate.day != 1):
-            startdate = next_month(startdate)
+            startdate = next_month(startdate, calendar)
             adjust_file_list = True
         if (enddate.day != dpm[calendar][enddate.month]):
             enddate = prev_month(enddate, calendar)
