@@ -25,6 +25,7 @@ import multiprocessing
 from rasmlib.post_processing import means
 from rasmlib.post_processing import share
 from rasmlib.post_processing.adjust_timestamp import adjust_timestamp
+from rasmlib import io, utils
 
 results_list = []
 
@@ -61,7 +62,7 @@ def process_init(config_file, short_term_archive,
                  output_preset, processed_dir):
     # ---------------------------------------------------------------- #
     # Read Configuration files
-    config_dict = share.read_config(config_file)
+    config_dict = io.read_config(config_file)
 
     if output_preset not in config_dict:
         raise ValueError('Output_preset is not in the configuration file, \
@@ -92,7 +93,7 @@ def process_init(config_file, short_term_archive,
     processed_case_dir = os.path.join(procdir, casename)
     processed_comp_dir = os.path.join(processed_case_dir,
                                       config_dict['options']['component'])
-    directories = share.make_directories(processed_comp_dir, dirs)
+    directories = utils.make_directories(processed_comp_dir, dirs)
 
     directories['processed_case_dir'] = processed_case_dir
     directories['processed_comp_dir'] = processed_comp_dir
@@ -147,7 +148,7 @@ def process_run(filelist, config_dict):
     if abs(options['timestamp_offset']) > 0:
         if numofproc > 1:
             print('Running adjust_timestamp: {0} processes'.format(numofproc))
-            filechunks = share.partition(filelist, numofproc)
+            filechunks = utils.partition(filelist, numofproc)
             pool = multiprocessing.Pool(numofproc)
 
             kwds = {'timestep': output_preset,
@@ -219,7 +220,7 @@ def process_final(results, config_dict):
     # Clean up
     if config_dict['options']['clean']:
         tempdir = directories['temp']
-        share.clean_dir(tempdir)
+        utils.clean_dir(tempdir)
         print("Cleaned up temporary directory: {0}".format(tempdir))
     # ---------------------------------------------------------------- #
 
@@ -230,7 +231,7 @@ def process_final(results, config_dict):
                                     "{0}.{1}.tar.gz".format(casename,
                                                             component))
         print('Making tarfile now: {0}'.format(tarfile_name))
-        share.make_tarfile(tarfile_name, processed_comp_dir)
+        io.make_tarfile(tarfile_name, processed_comp_dir)
     # ---------------------------------------------------------------- #
 
     # ---------------------------------------------------------------- #

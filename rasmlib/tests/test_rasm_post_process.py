@@ -15,9 +15,11 @@ import netCDF4
 import numpy as np
 from dateutil import relativedelta
 from copy import deepcopy
-from ..means import *
-from ..share import *
-from ..adjust_timestamp import *
+from ..utils import *
+from ..io import *
+from ..post_processing.means import *
+from ..post_processing.share import *
+from ..post_processing.adjust_timestamp import *
 
 stdtimeunits = 'days since 1990-01-01'
 badtimeunits = "days since 0000-1-1 0:0:0"

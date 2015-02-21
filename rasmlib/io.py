@@ -1,11 +1,18 @@
+"""io.py"""
 import os
 from collections import OrderedDict
-from ConfigParser import SafeConfigParser
 import pandas as pd
 import xray
+try:
+    from ConfigParser import SafeConfigParser
+except ImportError:
+    from configparser import SafeConfigParser
+import tarfile
+from contextlib import closing
+from netCDF4 import Dataset
 
 
-class AnalysisIOError(Exception):
+class RasmLibIOError(Exception):
     pass
 
 
@@ -17,8 +24,8 @@ def read_config(config_file):
     """
 
     if not os.path.isfile(config_file):
-        raise AnalysisIOError('Configuration File ({0}) does not '
-                              'exist'.format(config_file))
+        raise RasmLibIOError('Configuration File ({0}) does not '
+                             'exist'.format(config_file))
 
     config = SafeConfigParser()
     config.optionxform = str
@@ -29,7 +36,7 @@ def read_config(config_file):
         options = config.options(section)
         dict2 = OrderedDict()
         for option in options:
-            dict2[option] = _config_type(config.get(section, option))
+            dict2[option] = config_type(config.get(section, option))
         dict1[section] = dict2
     return dict1
 # -------------------------------------------------------------------- #
@@ -37,7 +44,7 @@ def read_config(config_file):
 
 # -------------------------------------------------------------------- #
 # Find the type of the config options
-def _config_type(value):
+def config_type(value):
     """
     Parse the type of the configuration file option.
     First see the value is a bool, then try float, finally return a string.
@@ -94,6 +101,24 @@ def _isint(x):
 # -------------------------------------------------------------------- #
 
 
+def make_tarfile(output_filename, source_dir, mode="w:gz"):
+    """Simple wrapper to create a compressed tar file at the end of the run
+
+    Parameters
+    ----------
+    output_filename : str
+        Output tarfile name.
+    source_dir : str
+        Directory to tar.
+    mode : str
+        Mode to open and compress tarfile.  See `tarfile.open` for
+        compression options.
+    """
+    with closing(tarfile.open(output_filename, mode)) as tar:
+        tar.add(source_dir, arcname=os.path.basename(source_dir))
+    return
+
+
 def get_data_files_namelist(namelist):
     """read a standard analysis namelist"""
     values = pd.read_excel(namelist, 'Sheet1', header=True)
@@ -125,13 +150,13 @@ def get_datasets(names, files, variables, analysis_vars, timestep):
         f = files.loc[(files['NAME'] == name) &
                       (files['TIMESTEP'] == timestep)]
         if len(f) > 1:
-            raise AnalysisIOError('Union of NAME: {0} and TIMESTEP: {1} '
-                                  'returned too many rows ({2}).\n'
-                                  '{3}'.format(name, timestep, len(f), f))
+            raise RasmLibIOError('Union of NAME: {0} and TIMESTEP: {1} '
+                                 'returned too many rows ({2}).\n'
+                                 '{3}'.format(name, timestep, len(f), f))
         elif len(f) < 1:
-            raise AnalysisIOError('Union of NAME: {0} and TIMESTEP: {1} '
-                                  'returned no rows.\n'
-                                  '{2}'.format(name, timestep, f))
+            raise RasmLibIOError('Union of NAME: {0} and TIMESTEP: {1} '
+                                 'returned no rows.\n'
+                                 '{2}'.format(name, timestep, f))
         file_path = f['FILE_PATH'].values[0]
         dataset_class = f['DATASET_CLASS'].values[0]
 
@@ -176,6 +201,25 @@ def read_domain(filename):
     domain = xray.open_dataset(filename)
     domain['xc'] = domain['xc'].rename('lon')
     domain['yc'] = domain['yc'].rename('lat')
-    domain['area'] *= re*re  # area in m2
+    domain['area'] *= re * re  # area in m2
 
     return domain
+
+
+def get_time_units(filename):
+    """Get the timeunits in a netCDF file: `filename`.
+
+    Parameters
+    ----------
+    filename : str
+        netCDF file containing `time` variable with units attribute.
+
+    Returns
+    -------
+    time_units : str
+        Time units attributes in `filename`.
+    """
+    f = Dataset(filename)
+    time_units = f.variables['time'].units
+    f.close()
+    return time_units

@@ -19,17 +19,20 @@ import argparse
 import datetime
 import os
 import glob
+from warnings import warn
 from nco import Nco
-from netCDF4 import Dataset
-from .share import dpm, HOURSPERDAY, MINSPERDAY, SECSPERDAY, MONTHSPERYEAR
-from .share import Histfile, custom_strftime, clean_file, MACH_OPTS
+from ..calendar import dpm, HOURSPERDAY, MINSPERDAY, SECSPERDAY, MONTHSPERYEAR
+from ..io import get_time_units
+from ..utils import custom_strftime, clean_file
+from .share import Histfile, MACH_OPTS
+
 nco = Nco(**MACH_OPTS)
 
 
 def main():
     """main wrapper for adjust timestep."""
     timestep, nsteps, fname_format,\
-        srcdir, destdir, calendar, delete = process_command_line()
+        srcdir, destdir, calendar, delete = _process_command_line()
 
     # ---------------------------------------------------------------- #
     # Get a list of input files
@@ -66,17 +69,59 @@ def main():
 
 
 def adjust_timestamp(filelist,
-                     timestep=None,
-                     nsteps=-1,
-                     fname_format=None,
-                     destdir=None,
+                     timestep='',
+                     nsteps=0,
+                     fname_format='',
+                     destdir='./',
                      calendar='standard'):
-    """Adjust the timestep for all of the input files """
+    """Adjust the timestep for all of the input files
+
+    Parameters
+    ----------
+    filelist : list like.
+        Iterable of `Histfile` objects.
+    timestep : {'hourly', 'daily', 'monthly'}, required
+        String denoting what the history file frequency was.
+    nsteps : int
+        Number of `timestep`s to adjust.
+    fname_format : str, required
+        Format string representing the filename
+        (e.g. example.cpl.ha.%%Y-%%m.nc)
+    destdir : str, required
+        Path to where adjusted files should be written.
+    calendar : {'noleap', '365_day', 'standard', 'gregorian',
+               'proleptic_gregorian', 'all_leap', '366_day', '360_day'}
+        Supported netCDF calendar.
+
+    Returns
+    -------
+    newfilelist : list
+        List of `Histfile` objects with adjusted timestamps.
+    """
     print('Adjusting timestamp for {0} files...'.format(len(filelist)))
     print('Adjusting by {0} timesteps of size {1}'.format(nsteps, timestep))
     newfilelist = []
+
     # ---------------------------------------------------------------- #
-    #
+    # Validate input parameters
+    if timestep not in ['hourly', 'daily', 'monthly']:
+        raise ValueError('Must provide a valid timestep.')
+    if not nsteps:
+        raise ValueError('Must provide a nonzero integer for nsteps.')
+    if not fname_format:
+        raise ValueError('Must provide a valid filename format (fname_format)')
+    if not destdir:
+        raise ValueError('Must provide a valid destination directory '
+                         '(destdir).')
+    if destdir is './':
+        warn('Adjusted files will be written to current working directory.')
+    if calendar not in dpm.keys():
+        raise ValueError('Unknow calendar: {0}, supported calendars are: '
+                         '{1}'.format(calendar, dpm.keys()))
+    # ---------------------------------------------------------------- #
+
+    # ---------------------------------------------------------------- #
+    # set out_format
     if timestep == 'monthly':
         prefix = fname_format.split("%")[0]
         out_format = prefix + "%Y-%m.nc"
@@ -115,7 +160,7 @@ def adjust_timestamp(filelist,
         time_units = "{0} since 0001-01-01 00:00:00".format(time_units[0])
         print("adjusting netcdf base time units \
               from 0000-1-1 to 0001-01-01 00:00:00")
-        unit_offset = -1 * sum(days_per_month)
+        unit_offset = -1 * sum(days_per_month[1:])
     else:
         time_units = None
         unit_offset = 0.0
@@ -169,16 +214,15 @@ def adjust_timestamp(filelist,
                     if nsteps > 0:
                         days += days_per_month[month]
                         month += 1
+                        if month > MONTHSPERYEAR:
+                            year += 1
+                            month -= MONTHSPERYEAR
                     else:
-                        days -= days_per_month[month - 1]
                         month -= 1
-
-                    if month < 1:
-                        year -= 1
-                        month += MONTHSPERYEAR
-                    elif month > MONTHSPERYEAR:
-                        year += 1
-                        month -= MONTHSPERYEAR
+                        if month < 1:
+                            year -= 1
+                            month += MONTHSPERYEAR
+                        days -= days_per_month[month]
 
                 td = (days + unit_offset) * unit_mult
 
@@ -263,15 +307,8 @@ def adjust_timestamp(filelist,
     return newfilelist
 
 
-def get_time_units(filename):
-    f = Dataset(filename)
-    time_units = f.variables['time'].units
-    f.close()
-    return time_units
-
-
-def process_command_line():
-    """ Get command line args"""
+def _process_command_line():
+    """Get command line arguments"""
 
     description = """
 Generic post processor for dealing with model output with wrong timestamps

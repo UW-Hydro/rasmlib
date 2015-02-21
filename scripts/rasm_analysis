@@ -5,7 +5,7 @@ analysis library wrapper for RASM project
 
 from __future__ import print_function
 import argparse
-import rasmlib.analysis.tools.io as io
+from rasmlib import io
 
 
 # Dynamic imports

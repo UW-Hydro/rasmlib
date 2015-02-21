@@ -5,9 +5,11 @@ means.py
 import os
 import multiprocessing
 from itertools import groupby
-from .share import dpm, next_month, next_day, prev_month, prev_day, chunks
+from ..calendar import dpm, next_month, next_day, prev_month, prev_day
+from ..utils import chunks
 from .share import MACH_OPTS
 from nco import Nco
+
 nco = Nco(**MACH_OPTS)
 
 global results_list
@@ -23,7 +25,27 @@ hkeyfunc = lambda x: x.filedate.hour
 def monthly_mean_diurnal_cycle(filelist, options, variables=None):
     """
     Creates a series of netcdf files for each year, month, and hour
-    Note: only accepts hourly inputs
+    Note: Timestep must be hourly.
+
+    Parameters
+    ----------
+    filelist : list like
+        Iterable of `Histfile` objects.
+    options : dict
+        Options dictionary from config dict. Must include the following fields:
+         - calendar
+         - casename
+         - model
+         - timestep
+         - directories
+         - numofproc
+    variables : str or list like
+        Variable(s) to include in the output file.
+
+    Returns
+    -------
+    results_list : list
+        List of monthly mean diurnal cycle files.
     """
     print('Making monthly diurnal cycle means')
 
@@ -87,9 +109,9 @@ def monthly_mean_diurnal_cycle(filelist, options, variables=None):
             for hour, hgroup in groupby(mlist, hkeyfunc):
                 hlist = list(hgroup)
                 hlist.sort(key=hkeyfunc)
-                pool.apply_async(diurnal_cycle,
-                                 callback=store_result,
-                                 args=(year, month, hour, hlist, 
+                pool.apply_async(_diurnal_cycle,
+                                 callback=_store_result,
+                                 args=(hlist, year, month, hour,
                                        outdir, casename, model,
                                        variables))
     pool.close()
@@ -102,9 +124,37 @@ def monthly_mean_diurnal_cycle(filelist, options, variables=None):
     return results_list
 
 
-def diurnal_cycle(year, month, hour, hlist, outdir, casename, model,
-                  variables):
-    """ """
+def _diurnal_cycle(hlist, year, month, hour, outdir, casename, model,
+                   variables):
+    """Compute the monthly mean diurnal cycle for the files in `hlist`.  This
+    function computes the monthly mean diurnal cycle for one hour in one
+    particular month/year.  This function must be called for each hour,
+    month, and year.
+
+    Parameters
+    ----------
+    year : int
+        Year of diurnal cycle aggregation.
+    month : int [1-12]
+        Month of diurnal cycle aggregation.
+    hour : int [0-23]
+        Hour of diurnal cycle aggregation.
+    hlist : list like
+        List of files to use in the computation of the diurnal cycle.
+    outdir : str
+        Output file directory.
+    casename : str
+        Prefix to use for output file.
+    model : int
+
+    variables : str or list like
+        Variable(s) to include in the output file.
+
+    Returns
+    -------
+    outfile : str
+        Path to file of aggregated mean.
+    """
     filename = "{0}.{1}.hhmm.{2:04}-{3:02}-{4:02}.nc".format(casename, model,
                                                              year, month, hour)
     inputs = [fname.filename for fname in hlist]
@@ -114,7 +164,28 @@ def diurnal_cycle(year, month, hour, hlist, outdir, casename, model,
 
 
 def daily_mean_timeseries(filelist, options, variables=None):
-    """Create a timeseries of daily means"""
+    """Create a timeseries of daily means.
+
+    Parameters
+    ----------
+    filelist : list like
+        Iterable of `Histfile` objects.
+    options : dict
+        Options dictionary from config dict. Must include the following fields:
+         - calendar
+         - casename
+         - model
+         - timestep
+         - directories
+         - numofproc
+    variables : str or list like
+        Variable(s) to include in the output file.
+
+    Returns
+    -------
+    outfile : str
+        Path to file of daily means.
+    """
 
     print('Making daily mean timeseries')
 
@@ -179,9 +250,9 @@ def daily_mean_timeseries(filelist, options, variables=None):
                 for day, dgroup in groupby(mlist, dkeyfunc):
                     dlist = list(dgroup)
                     dlist.sort(key=dkeyfunc)
-                    pool.apply_async(day_mean,
-                                     callback=store_result,
-                                     args=(year, month, day, dlist,
+                    pool.apply_async(_day_mean,
+                                     callback=_store_result,
+                                     args=(dlist, year, month, day,
                                            tempdir, casename,
                                            model, variables))
         pool.close()
@@ -203,7 +274,7 @@ def daily_mean_timeseries(filelist, options, variables=None):
         pool = multiprocessing.Pool(numofproc)
         for i, chunk in enumerate(chunked_list):
             outfile = os.path.join(tempdir, 'chunk.{0}.nc'.format(i))
-            pool.apply_async(cat_chunk,
+            pool.apply_async(cat_chunks,
                              args=(chunk, outfile))
             results_list.append(outfile)
         pool.close()
@@ -223,13 +294,52 @@ def daily_mean_timeseries(filelist, options, variables=None):
     return outfile
 
 
-def cat_chunk(chunk, outfile):
+def cat_chunks(chunk, outfile):
+    """Concatenate series of netCDF filename.
+
+    Parameters
+    ----------
+    chunk : list like
+        Series of chunks to concatenate.
+    outfile : str
+        Filename of output file.
+    """
     nco.ncrcat(input=chunk, output=outfile, history=True)
     return
 
 
-def day_mean(year, month, day, dlist, tempdir, casename, model,
-             variables):
+def _day_mean(dlist, year, month, day, tempdir, casename, model,
+              variables):
+    """Compute the daily mean for the files in `hlist`.  This function
+    computes the daily mean for one hour in one particular month/year.
+    This function must be called for each day, month, and year.
+
+    Parameters
+    ----------
+    dlist : list like
+        List of files to use in the computation of the daily mean.
+    year : int
+        Year of aggregation.
+    month : int [1-12]
+        Month of aggregation.
+    day : int [1-31]
+        Day of aggregation.
+    outdir : str
+        Output file directory.
+    tempdir : str
+        Temporary outfile directory.
+    casename : str
+        Prefix to use for output file.
+    model : int
+        Name to use as the for the model/component key in the output file.
+    variables : str or list like
+        Variable(s) to include in the output file.
+
+    Returns
+    -------
+    outfile : str
+        Path to file of aggregated mean.
+    """
     filename = "{0}.{1}.hdm.{2:04}-{3:02}-{4:02}.nc".format(casename, model,
                                                             year, month, day)
     inputs = [fname.filename for fname in dlist]
@@ -239,7 +349,28 @@ def day_mean(year, month, day, dlist, tempdir, casename, model,
 
 
 def monthly_mean_timeseries(filelist, options, variables=None):
-    """ Create a timeseries of monthly means"""
+    """ Create a timeseries of monthly means
+
+    Parameters
+    ----------
+    filelist : list like
+        Iterable of `Histfile` objects.
+    options : dict
+        Options dictionary from config dict. Must include the following fields:
+         - calendar
+         - casename
+         - model
+         - timestep
+         - directories
+         - numofproc
+    variables : str or list like
+        Variable(s) to include in the output file.
+
+    Returns
+    -------
+    outfile : str
+        Path to file of monthly means.
+    """
 
     print('Making monthly mean timeseries')
 
@@ -304,9 +435,9 @@ def monthly_mean_timeseries(filelist, options, variables=None):
             for month, mgroup in groupby(ylist, mkeyfunc):
                 mlist = list(mgroup)
                 mlist.sort(key=hkeyfunc)
-                pool.apply_async(month_mean,
-                                 callback=store_result,
-                                 args=(year, month, mlist, tempdir,
+                pool.apply_async(_month_mean,
+                                 callback=_store_result,
+                                 args=(mlist, year, month, tempdir,
                                        outdir, casename, model,
                                        variables))
         pool.close()
@@ -331,8 +462,36 @@ def monthly_mean_timeseries(filelist, options, variables=None):
     return outfile
 
 
-def month_mean(year, month, mlist, tempdir, outdir, casename, model,
-               variables):
+def _month_mean(mlist, year, month, tempdir, outdir, casename, model,
+                variables):
+    """Compute the monthly mean for the files in `hlist`.  This function
+    computes the monthly mean for `month` in a given `year`.
+    This function must be called for each day, month, and year.
+
+    Parameters
+    ----------
+    mlist : list like
+        List of files to use in the computation of the monthly mean.
+    year : int
+        Year of aggregation.
+    month : int [1-12]
+        Month of aggregation.
+    tempdir : str
+        Temporary outfile directory.
+    outdir : str
+        Output file directory.
+    casename : str
+        Prefix to use for output file.
+    model : int
+        Name to use as the for the model/component key in the output file.
+    variables : str or list like
+        Variable(s) to include in the output file.
+
+    Returns
+    -------
+    outfile : str
+        Path to file of aggregated mean.
+    """
     filename = "{0}.{1}.hmm.{2:04}-{3:02}.nc".format(casename, model,
                                                      year, month)
     inputs = [fname.filename for fname in mlist]
@@ -341,9 +500,17 @@ def month_mean(year, month, mlist, tempdir, outdir, casename, model,
     return outfile
 
 
-def store_result(result):
+def _store_result(result):
+    """Store the results from the callback of the individual pool members
+
+    This is called whenever foo_pool(i) returns a result.
+    result_list is modified only by the main process, not the pool workers.
+
+    Parameters
+    ----------
+    result : object
+        Callback result from pool members.
+    """
     global results_list
-    # This is called whenever foo_pool(i) returns a result.
-    # result_list is modified only by the main process, not the pool workers.
     results_list.append(result)
 # -------------------------------------------------------------------- #

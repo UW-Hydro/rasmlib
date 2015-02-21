@@ -19,11 +19,13 @@ import datetime
 import time as tm
 import numpy as np
 from netCDF4 import Dataset, date2num
-import cdo
-lcdo = cdo.Cdo()
+from cdo import Cdo
 import os
 import sys
 import re
+from ..utils import argsort
+
+lcdo = Cdo()
 
 REFERENCE_STRING = '0001-1-1 0:0:0'
 REFERENCE_DATE = 10101                         # i.e. REFERENCE_STRING
@@ -106,20 +108,13 @@ def parse_dates(files):
         d0, d1 = re.findall(r'\d{8}', fname)
         t0 = datetime.datetime.strptime(d0, '%Y%m%d')
         t1 = datetime.datetime.strptime(d1, '%Y%m%d')
-        tave = (t1-t0)/2 + t0
+        tave = (t1 - t0) / 2 + t0
 
         startdates.append(t0)
         enddates.append(t1)
         middates.append(tave)
 
     return startdates, enddates, middates
-
-
-def argsort(seq):
-    """ Equivalent to numpy argsort """
-    #http://stackoverflow.com/questions/3382352/equivalent-of-numpy-argsort-in-basic-python/3382369#3382369
-    #by ubuntu
-    return sorted(range(len(seq)), key=seq.__getitem__)
 
 
 def write_nc(latfile="",
@@ -137,7 +132,7 @@ def write_nc(latfile="",
 
     lon = np.frombuffer(rawdata, dtype=np.int32)
     lon.resize([ni, nj])
-    lon = lon/100000.
+    lon = lon / 100000.
 
     infile = latfile
     with open(infile, 'rb') as f:
@@ -145,7 +140,7 @@ def write_nc(latfile="",
 
     lat = np.frombuffer(rawdata, dtype=np.int32)
     lat.resize([ni, nj])
-    lat = lat/100000.
+    lat = lat / 100000.
 
     infile = maskfile
     with open(infile, 'rb') as f:
@@ -198,8 +193,12 @@ def write_nc(latfile="",
     snow[:, :, :] = snowice
 
     # write attributes for netcdf
-    f.description = 'Northern Hemisphere EASE-Grid 2.0 Weekly Snow Cover and Sea Ice Extent Version 4'
-    f.reference = 'Brodzik, M. and R. Armstrong. 2013. Northern Hemisphere EASE-Grid 2.0 Weekly Snow Cover and Sea Ice Extent. Version 4. Boulder, Colorado USA: NASA DAAC at the National Snow and Ice Data Center. '
+    f.description = 'Northern Hemisphere EASE-Grid 2.0 Weekly Snow Cover and '\
+                    'Sea Ice Extent Version 4'
+    f.reference = 'Brodzik, M. and R. Armstrong. 2013. Northern Hemisphere '\
+                  'EASE-Grid 2.0 Weekly Snow Cover and Sea Ice Extent. '\
+                  'Version 4. Boulder, Colorado USA: NASA DAAC at the '\
+                  'National Snow and Ice Data Center.'
     f.history = 'Created: {}\n'.format(tm.ctime(tm.time()))
     f.history += ' '.join(sys.argv) + '\n'
     f.source = sys.argv[0]  # prints the name of script used
