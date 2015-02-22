@@ -64,7 +64,7 @@ def random_field():
 @pytest.fixture
 def foo_cfg():
     """ a simple netCDF file with a random field"""
-    filename = 'foo_cfg.txt'
+    filename = tempfile.mkstemp(suffix='.cfg', prefix='tmp', text=True)[1]
     cfg_text = """
 [section1]
 key1: mystring

@@ -1,9 +1,9 @@
 rasmlib:  RASM analysis and post-processing tools
 =========
 
-[![Build Status](https://travis-ci.org/jhamman/rasmlib.svg)](https://travis-ci.org/jhamman/rasmlib) [![Documentation Status](https://readthedocs.org/projects/rasmlib/badge/?version=latest)](https://readthedocs.org/projects/rasmlib/?badge=latest)
+[![Build Status](https://travis-ci.org/jhamman/rasmlib.svg)](https://travis-ci.org/jhamman/rasmlib) [![Documentation Status](https://readthedocs.org/projects/rasmlib/badge/?version=develop)](https://readthedocs.org/projects/rasmlib/?badge=develop)
 
-`rasmlib` documentation: http://rasmlib.readthedocs.org
+`rasmlib` documentation: http://rasmlib.readthedocs.org/en/develop/
 
 ## RASM
 The [Regional Arctic System Model (RASM)](http://www.oc.nps.edu/NAME/RASM.htm) is a high resolution, regional, coupled atmosphere - land - sea ice - ocean model that uses the [Community Earth System Model (CESM)](http://www2.cesm.ucar.edu/) coupling infrastructure (CPL7) over a Pan-Arctic domain. RASM is composed of five model components:
