@@ -18,7 +18,7 @@ The [Regional Arctic System Model (RASM)](http://www.oc.nps.edu/NAME/RASM.htm) i
 `rasmlib` is a collection of post-processing, analysis, and plotting tools used to support the development of RASM.  Many of the scripts and functions in this package were developed specifically for RASM and are likely not applicable to other projects.
 
 ## History
-`rasmlib` development began in 2012 to support the development of RASM.  Joe Hamman has done most of the development with support and contributions from of Bart Nijssen and Mu Xiao.
+`rasmlib` development began in 2012 to support the development of RASM.  Joe Hamman has done most of the development with support and contributions from of [Bart Nijssen](@bartnijssen) and [Mu Xiao](@muxiao).
 
 ## License
 rasmlib analysis and post processing toolbox. Copyright (C) 2015, Joe Hamman
