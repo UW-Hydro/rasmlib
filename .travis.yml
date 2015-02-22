@@ -28,6 +28,7 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
   - source activate test-environment
   - conda install matplotlib basemap pandas numpy netCDF4
+  - conda update pandas netcdf4
   - pip install xray nco
   - python setup.py install
 

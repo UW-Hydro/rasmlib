@@ -15,6 +15,7 @@ import netCDF4
 import numpy as np
 from dateutil import relativedelta
 from copy import deepcopy
+from collections import OrderedDict
 from ..utils import *
 from ..io import *
 from ..post_processing.means import *
@@ -58,6 +59,27 @@ def tempsrcdir():
 @pytest.fixture
 def random_field():
     return np.random.rand(5, 5)
+
+
+@pytest.fixture
+def foo_cfg():
+    """ a simple netCDF file with a random field"""
+    filename = 'foo_cfg.txt'
+    cfg_text = """
+[section1]
+key1: mystring
+key2: TRUE
+key3: 3
+key4: 4.4
+
+[section2]
+key1: another string
+key2: 2, 3, 4
+"""
+    with open(filename, 'w') as foo:
+        foo.write(cfg_text)
+
+    return filename
 
 
 @pytest.fixture
@@ -492,7 +514,16 @@ def test_adjust_timestamp_badtimeunits(daily_filelist_badtimeunits,
         assert "0001-01-01" in new_units
 
 
-def test_read_config_file():
+def test_read_config_file(foo_cfg):
     """test for successful read of sample_config_file.cfg and dict return"""
-    config_dict = read_config('sample_config_file.cfg')
-    assert type(config_dict) == dict
+    config_dict = read_config(foo_cfg)
+    assert type(config_dict) == OrderedDict
+    assert config_dict['section1']['key1'] == 'mystring'
+    assert config_dict['section1']['key2'] is True
+    assert config_dict['section1']['key3'] == 3
+    assert type(config_dict['section1']['key3']) == int
+    assert config_dict['section1']['key4'] == 4.4
+    assert type(config_dict['section1']['key4']) == float
+    assert config_dict['section2']['key1'] == 'another string'
+    assert config_dict['section2']['key2'] == [2, 3, 4]
+    assert type(config_dict['section2']['key2']) == list
