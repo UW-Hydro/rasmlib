@@ -10,14 +10,14 @@ before_install:
   - sudo apt-get install libnetcdf-dev nco
 
 install:
-  # Get miniconda
+  # Get anaconda
   - if [[ "$TRAVIS_PYTHON_VERSION" == "3.3" ]]; then
-      wget http://repo.continuum.io/miniconda/Miniconda3-3.4.2-Linux-x86_64.sh -O miniconda.sh;
+      wget http://repo.continuum.io/anaconda3/Anaconda3-2.1.0-Linux-x86_64.sh -O anaconda.sh;
     else
-      wget http://repo.continuum.io/miniconda/Miniconda-3.4.2-Linux-x86_64.sh -O miniconda.sh;
+      wget http://09c8d0b2229f813c1b93-c95ac804525aac4b6dba79b00b39d1d3.r79.cf1.rackcdn.com/Anaconda-2.1.0-Linux-x86_64.sh -O anaconda.sh;
     fi
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
+  - bash anaconda.sh -b -p $HOME/anaconda
+  - export PATH="$HOME/anaconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
@@ -25,8 +25,9 @@ install:
   - conda info -a
 
   # Make Conda test environment
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION --file=ci/requirements-${TRAVIS_PYTHON_VERSION}.txt
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
   - source activate test-environment
+  - pip install -r ci/requirements-${TRAVIS_PYTHON_VERSION}.txt
   - python setup.py install
 
 # command to run tests
