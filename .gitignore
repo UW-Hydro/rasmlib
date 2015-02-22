@@ -2,3 +2,8 @@
 *~
 .DS_Store
 rasmlib.egg-info/
+build/
+dist/
+docs/_build_html/
+docs/build/
+docs/generated/
