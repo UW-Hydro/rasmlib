@@ -33,7 +33,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.autosummary',
               'sphinx.ext.intersphinx',
               'sphinx.ext.extlinks',
-              'numpydoc',
+              # 'numpydoc',
               'IPython.sphinxext.ipython_directive',
               'IPython.sphinxext.ipython_console_highlighting']
 
@@ -111,12 +111,12 @@ pygments_style = 'sphinx'
 # a list of builtin themes.
 html_theme = 'default'
 
-on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-if not on_rtd:  # only import and set the theme if we're building docs locally
+try:  # use ReadTheDocs theme, if installed
     import sphinx_rtd_theme
     html_theme = 'sphinx_rtd_theme'
-    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-print(html_theme)
+    html_theme_path = [sphinx_rtd_theme.get_html_theme_path(), ]
+except ImportError:
+    pass
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
