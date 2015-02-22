@@ -32,10 +32,7 @@ sys.path.insert(0, os.path.abspath('../rasmlib'))
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.autosummary',
               'sphinx.ext.intersphinx',
-              'sphinx.ext.extlinks',
-              # 'numpydoc',
-              'IPython.sphinxext.ipython_directive',
-              'IPython.sphinxext.ipython_console_highlighting']
+              'sphinx.ext.extlinks']
 
 autosummary_generate = True
 numpydoc_class_members_toctree = True
