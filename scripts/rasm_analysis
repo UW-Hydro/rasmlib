@@ -6,6 +6,7 @@ analysis library wrapper for RASM project
 from __future__ import print_function
 import argparse
 from rasmlib import io
+import pandas as pd
 
 
 # Dynamic imports
@@ -27,12 +28,12 @@ options = config.pop('OPTIONS')
 
 # --------------------------------------------------------------------------- #
 # read analysis namelist
-data_files = io.get_data_files_namelist(main['DATA_FILES_NAMELIST'])
+data_files = pd.read_excel(main['DATA_FILES_NAMELIST'], 'Sheet1', header=True)
 # --------------------------------------------------------------------------- #
 
 # --------------------------------------------------------------------------- #
 # read variables namelist
-variables = io.get_variables_namelist(main['VARIABLES_NAMELIST'])
+variables = pd.read_excel(main['VARIABLES_NAMELIST'], 'Sheet1', header=True)
 # --------------------------------------------------------------------------- #
 
 # --------------------------------------------------------------------------- #

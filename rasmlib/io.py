@@ -1,7 +1,6 @@
 """io.py"""
 import os
 from collections import OrderedDict
-import pandas as pd
 import xray
 try:
     from ConfigParser import SafeConfigParser
@@ -18,36 +17,61 @@ class RasmLibIOError(Exception):
 
 # -------------------------------------------------------------------- #
 # Read the Configuration File
-def read_config(config_file):
+def read_config(config_filepath):
     """
     Return a dictionary with subdictionaries of all configFile options/values
+
+    Parameters
+    ----------
+    config_filepath : str
+        Filepath to configparser / ini style formatted configuration file
+
+    Returns
+    -------
+    config_dict : collections.OrderedDict
+        OrderedDict of parsed configuration file value
+
     """
 
-    if not os.path.isfile(config_file):
+    if not os.path.isfile(config_filepath):
         raise RasmLibIOError('Configuration File ({0}) does not '
-                             'exist'.format(config_file))
+                             'exist'.format(config_filepath))
 
     config = SafeConfigParser()
     config.optionxform = str
-    config.read(config_file)
+    config.read(config_filepath)
     sections = config.sections()
-    dict1 = OrderedDict()
+    config_dict = OrderedDict()
     for section in sections:
         options = config.options(section)
         dict2 = OrderedDict()
         for option in options:
             dict2[option] = config_type(config.get(section, option))
-        dict1[section] = dict2
-    return dict1
+        config_dict[section] = dict2
+    return config_dict
 # -------------------------------------------------------------------- #
 
 
 # -------------------------------------------------------------------- #
 # Find the type of the config options
 def config_type(value):
-    """
-    Parse the type of the configuration file option.
+    """Parse the type of the configuration file option.
+
     First see the value is a bool, then try float, finally return a string.
+
+    If string, the `config_type` will attemp to expand any environment
+    variables befoer returning.
+
+    Parameters
+    ----------
+    value : str or list of strings
+        Generic python value to be parsed.
+
+    Returns
+    -------
+    parsed_value : {bool, int, float, str} or list of
+        {bool, int, float, or str}
+        Parsed value.
     """
     val_list = [x.strip() for x in value.split(',')]
     if len(val_list) == 1:
@@ -78,7 +102,18 @@ def config_type(value):
 
 # -------------------------------------------------------------------- #
 def _isfloat(x):
-    """Test of value is a float"""
+    """Test of value is a `float`
+
+    Parameters
+    ----------
+    x : str
+        Value to test if `float`.
+
+    Returns
+    -------
+    isfloat : bool
+        True if `x` can be cast to `float`, otherwise False.
+    """
     try:
         float(x)
     except ValueError:
@@ -90,7 +125,17 @@ def _isfloat(x):
 
 # -------------------------------------------------------------------- #
 def _isint(x):
-    """Test if value is an integer"""
+    """Test if value is an integer
+
+    Parameters
+    ----------
+    x : str
+        Value to test if `int`.
+
+    Returns
+    -------
+    isint : bool
+        True if `x` can be cast to `int`, otherwise False."""
     try:
         a = float(x)
         b = int(a)
@@ -119,26 +164,10 @@ def make_tarfile(output_filename, source_dir, mode="w:gz"):
     return
 
 
-def get_data_files_namelist(namelist):
-    """read a standard analysis namelist"""
-    values = pd.read_excel(namelist, 'Sheet1', header=True)
-
-    return values
-
-
-def get_variables_namelist(namelist):
-    values = pd.read_excel(namelist, 'Sheet1', header=True)
-    return values
-
-
 def get_datasets(names, files, variables, analysis_vars, timestep):
     """
     Parse the files and variables namelists and load the files into xray
     objects.
-
-    Notes:
-     - Currently, xray does not support partial reading of files so we are
-       actually reading the entire file.
     """
     datasets = OrderedDict()
 
@@ -193,12 +222,23 @@ def get_datasets(names, files, variables, analysis_vars, timestep):
     return datasets
 
 
-def read_domain(filename):
-    """read a domain file and return a xray dataset"""
+def read_domain(filepath):
+    """read a CESM domain file and return a xray dataset
+
+    Parameters
+    ----------
+    filepath : str
+        CESM domain filepath
+
+    Returns
+    ----------
+    domain : xray.Dataset
+        Dataset with domain variables.
+    """
 
     re = 6.37122e6
 
-    domain = xray.open_dataset(filename)
+    domain = xray.open_dataset(filepath)
     domain['xc'] = domain['xc'].rename('lon')
     domain['yc'] = domain['yc'].rename('lat')
     domain['area'] *= re * re  # area in m2
