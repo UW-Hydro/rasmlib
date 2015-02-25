@@ -80,7 +80,7 @@ def process_init(config_file, short_term_archive,
             workdir = os.environ.get('WORKDIR')
             procdir = os.path.join(workdir, 'processed')
         else:
-            raise ValueError('ERROR: Either provide an path to \
+            raise ValueError('ERROR: Either provide a path to \
                              --processed_dir or set your $WORKDIR \
                              environment variable')
 
@@ -237,17 +237,17 @@ def process_final(results, config_dict):
     # ---------------------------------------------------------------- #
     # Report on what we did
     print('Results from rasm_post_process.py:')
-    for key, val in results.iteritems():
+    for key, val in results.itmes():
         print("{0}: {1}".format(key, val))
     print("\n")
 
     print('Variables included in each level of analysis were:')
-    for key, val in config_dict[output_preset].iteritems():
+    for key, val in config_dict[output_preset].itmes():
         print("{0}: {1}".format(key, val))
     print("\n")
 
     print('Completed rasm_post_process.py.  Options were:')
-    for key, val in config_dict['options'].iteritems():
+    for key, val in config_dict['options'].itmes():
         print("{0}: {1}".format(key, val))
     print("\n")
 
