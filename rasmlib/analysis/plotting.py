@@ -113,8 +113,8 @@ def sub_plot_pcolor(data,
     if ax is None:
         ax = plt.gca()
 
-    map_obj.m.pcolormesh(map_obj.xi, map_obj.yi, np.squeeze(data),
-                         vmin=vmin, vmax=vmax, cmap=cmap, ax=ax)
+    mappable = map_obj.m.pcolormesh(map_obj.xi, map_obj.yi, np.squeeze(data),
+                                    vmin=vmin, vmax=vmax, cmap=cmap, ax=ax)
     map_obj.m.drawparallels(np.arange(-80., 81., 20.))
     map_obj.m.drawmeridians(np.arange(-180., 181., 20.))
     map_obj.m.drawcoastlines(color='k', linewidth=0.25)
@@ -122,7 +122,8 @@ def sub_plot_pcolor(data,
     if title is not None:
         plt.title(title, size=13)
     if cbar:
-        cbar = map_obj.m.colorbar(location=cbar_location, extend=cbar_extend)
+        cbar = map_obj.m.colorbar(location=cbar_location, extend=cbar_extend,
+                                  mappable=mappable)
         cbar.set_label(units)
 
     return
