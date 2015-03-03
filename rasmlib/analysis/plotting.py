@@ -28,6 +28,7 @@ class Bmap(object):
     def __init__(self, projection=default_projection):
         self.projection = projection
         self.m = Basemap(**self.projection)
+        self.inds_set = False
 
     def set_map_inds(self, lons, lats):
         """Set the map indices
@@ -120,9 +121,9 @@ def sub_plot_pcolor(data,
 
     if title is not None:
         plt.title(title, size=13)
-    if cbar is not None:
+    if cbar:
         cbar = map_obj.m.colorbar(location=cbar_location, extend=cbar_extend)
-    cbar.set_label(units)
+        cbar.set_label(units)
 
     return
 
@@ -297,10 +298,9 @@ def plot4_seasons(lons, lats, pannels, variables,
                 fig.tight_layout()
 
                 if outdir is not None:
-                    outfile = os.path.join(outdir,
-                                           '%s-%s-%s.%s' % (variable, season,
-                                                            plot_group,
-                                                            savekwds['format']))
+                    outfile = os.path.join(
+                        outdir, '%s-%s-%s.%s' % (variable, season, plot_group,
+                                                 savekwds['format']))
                     plt.savefig(outfile, **savekwds)
 
             if anomaly:
@@ -320,10 +320,10 @@ def plot4_seasons(lons, lats, pannels, variables,
                 fig.tight_layout()
 
                 if outdir is not None:
-                    outfile = os.path.join(outdir,
-                                           '%s-anom-%s-%s.%s' % (variable, season,
-                                                                 plot_group,
-                                                                 savekwds['format']))
+                    outfile = os.path.join(
+                        outdir, '%s-anom-%s-%s.%s' % (variable, season,
+                                                      plot_group,
+                                                      savekwds['format']))
                     plt.savefig(outfile, **savekwds)
 
             if percent_difference:
@@ -344,11 +344,10 @@ def plot4_seasons(lons, lats, pannels, variables,
                 fig.tight_layout()
 
                 if outdir is not None:
-                    outfile = os.path.join(outdir,
-                                           '%s-pdiff-%s-%s.%s' % (variable,
-                                                                  season,
-                                                                  plot_group,
-                                                                  savekwds['format']))
+                    outfile = os.path.join(
+                        outdir,
+                        '%s-pdiff-%s-%s.%s' % (variable, season, plot_group,
+                                               savekwds['format']))
                     plt.savefig(outfile, **savekwds)
 
             if percent_error:
@@ -369,11 +368,10 @@ def plot4_seasons(lons, lats, pannels, variables,
                 fig.tight_layout()
 
                 if outdir is not None:
-                    outfile = os.path.join(outdir,
-                                           '%s-perr-%s-%s.%s' % (variable,
-                                                                 season,
-                                                                 plot_group,
-                                                                 savekwds['format']))
+                    outfile = os.path.join(
+                        outdir, '%s-perr-%s-%s.%s' % (variable, season,
+                                                      plot_group,
+                                                      savekwds['format']))
                     plt.savefig(outfile, **savekwds)
 
             if percent_change:
@@ -394,11 +392,10 @@ def plot4_seasons(lons, lats, pannels, variables,
                 fig.tight_layout()
 
                 if outdir is not None:
-                    outfile = os.path.join(outdir,
-                                           '%s-pchg-%s-%s.%s' % (variable,
-                                                                 season,
-                                                                 plot_group,
-                                                                 savekwds['format']))
+                    outfile = os.path.join(
+                        outdir, '%s-pchg-%s-%s.%s' % (variable, season,
+                                                      plot_group,
+                                                      savekwds['format']))
                     plt.savefig(outfile, **savekwds)
 
 default_map = make_bmap()
