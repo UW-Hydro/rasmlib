@@ -237,17 +237,17 @@ def process_final(results, config_dict):
     # ---------------------------------------------------------------- #
     # Report on what we did
     print('Results from rasm_post_process.py:')
-    for key, val in results.itmes():
+    for key, val in results.items():
         print("{0}: {1}".format(key, val))
     print("\n")
 
     print('Variables included in each level of analysis were:')
-    for key, val in config_dict[output_preset].itmes():
+    for key, val in config_dict[output_preset].items():
         print("{0}: {1}".format(key, val))
     print("\n")
 
     print('Completed rasm_post_process.py.  Options were:')
-    for key, val in config_dict['options'].itmes():
+    for key, val in config_dict['options'].items():
         print("{0}: {1}".format(key, val))
     print("\n")
 
