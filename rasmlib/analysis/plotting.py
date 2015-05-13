@@ -4,10 +4,13 @@ rasmlib plot utilities
 import os
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import seaborn as sns
 from matplotlib import cm
 from mpl_toolkits.basemap import Basemap
 import numpy as np
 from ..calendar import seasons
+from .climatology import season_mean, annual_mean
+from scipy.stats import ttest_ind
 
 projections = {}
 projections['wr50a'] = {'urcrnrlat': 27.511827255753555,
@@ -158,6 +161,46 @@ def cmap_discretize(cmap, n_colors=10):
 
     return mpl.colors.LinearSegmentedColormap(cmap.name + "_%d" % n_colors,
                                               cdict, 1024)
+
+
+def cmap_discretize_2(cmap, n_colors):
+    """Return a discrete colormap from the continuous colormap cmap.
+
+        cmap: colormap instance, eg. cm.jet.
+        n_colors: number of colors.
+
+    Example
+        x = resize(arange(100), (5,100))
+        djet = cmap_discretize(cm.jet, 5)
+        imshow(x, cmap=djet)
+    """
+
+    if type(cmap) == str:
+        cmap = plt.get_cmap(cmap)
+    colors_i = np.concatenate((np.linspace(0, 1., n_colors), (0., 0., 0., 0.)))
+    colors_rgba = cmap(colors_i)
+    indices = np.linspace(0, 1., n_colors + 1)
+    cdict = {}
+    for ki, key in enumerate(('red', 'green', 'blue')):
+        cdict[key] = [(indices[i], colors_rgba[i - 1, ki], colors_rgba[i, ki])
+                      for i in range(n_colors + 1)]
+    # Return colormap object.
+    return mpl.colors.LinearSegmentedColormap(cmap.name + "_%d" % n_colors,
+                                              cdict, 1024)
+
+
+def colorbar_index(ncolors, cmap, ticklabels=None, cbar_shrink=1.0):
+    cmap = cmap_discretize_2(cmap, ncolors)
+    mappable = cm.ScalarMappable(cmap=cmap)
+    mappable.set_array([])
+    mappable.set_clim(-0.5, ncolors + 0.5)
+    colorbar = plt.colorbar(mappable, shrink=cbar_shrink, pad=0.01)
+    colorbar.set_ticks(np.linspace(0, ncolors, ncolors))
+    if ticklabels is None:
+        colorbar.set_ticklabels(range(ncolors))
+    else:
+        colorbar.set_ticklabels(ticklabels)
+    return colorbar
 
 
 def plot4_seasons(lons, lats, pannels, variables,
@@ -398,5 +441,355 @@ def plot4_seasons(lons, lats, pannels, variables,
                                                       plot_group,
                                                       savekwds['format']))
                     plt.savefig(outfile, **savekwds)
+    return
+
+
+def plot_zonal_means(lats, data, bounds=None, mask=None, weights=None,
+                     num_bins=100, xlabel='Latitude', ylabel='', title=''):
+    """ """
+    sns.set_style("darkgrid", {"grid.linewidth": .5, "axes.facecolor": ".9"})
+
+    plt.figure()
+
+    if mask is None:
+        mask = np.ones_like(lats)
+    if bounds is None:
+        bounds = [lats.min(), lats.max()]
+    bins = np.linspace(*bounds, num=num_bins + 1)
+    lat_means = np.zeros(num_bins)
+    data_means = {}
+    for k, v in data.items():
+        data_means[k] = np.zeros(num_bins)
+
+    for i in range(num_bins):
+        y0 = bins[i]
+        y1 = bins[i + 1]
+        lat_means[i] = bins[i:i + 1].mean()
+        ys, xs = np.nonzero((mask != 0) & (lats >= y0) & (lats < y1))
+        if weights is None:
+            for k, d in data.items():
+                data_means[k][i] = np.nanmean(d[ys, xs])
+        else:
+            for k, d in data.items():
+                data_means[k][i] = (np.nansum(d[ys, xs] * weights[ys, xs]) /
+                                    np.nansum(weights[ys, xs]))
+
+    for k, d in data_means.items():
+        plt.plot(lat_means, d, label=k)
+
+    plt.legend()
+    plt.xlabel(xlabel)
+    if ylabel:
+        plt.ylabel(ylabel)
+    if title:
+        plt.title(title)
+    return
+
+
+def make_plot_data(ds1, ds2, ny, nx, mask=None, relative=False,
+                   start=None, end=None):
+
+    ncols = 5
+    nrows = 3
+
+    plot_data = np.ma.empty((nrows, ncols, ny, nx))
+    hatch_data = np.ma.empty((ncols, ny, nx))
+
+    # ds1
+    temp1 = season_mean(ds1.sel(time=slice(start, end)),
+                        calendar='noleap').squeeze()
+    plot_data[0, 4] = annual_mean(ds1.sel(time=slice(start, end)),
+                                  calendar='noleap').squeeze().values
+
+    # ds2
+    temp2 = season_mean(ds2.sel(time=slice(start, end)),
+                        calendar='standard').squeeze()
+    plot_data[1, 4] = annual_mean(ds2.sel(time=slice(start, end)),
+                                  calendar='standard').squeeze().values
+
+    for i, season in enumerate(seasons):
+        plot_data[0, i] = temp1.sel(season=season).values
+        plot_data[1, i] = temp2.sel(season=season).values
+
+    # diff
+    if relative:
+        # percent difference
+        plot_data[2] = (100. * (plot_data[0] - plot_data[1]) /
+                        ((plot_data[0] + plot_data[1]) / 2))
+    else:
+        plot_data[2] = plot_data[0] - plot_data[1]
+
+    # hatch_data
+    ds1groups = dict(ds1.groupby('time.season'))
+    ds2groups = dict(ds2.groupby('time.season'))
+    for i, season in enumerate(seasons):
+        _, hatch_data[i] = ttest_ind(ds1groups[season].values.squeeze(),
+                                     ds2groups[season].values.squeeze(),
+                                     equal_var=False)
+    _, hatch_data[4] = ttest_ind(ds1.values.squeeze(),
+                                 ds2.values.squeeze(),
+                                 equal_var=False)
+
+    # mask
+    if mask is not None:
+        temp = np.ma.masked_where(mask == 0, mask)
+        mask = np.broadcast_arrays(plot_data, temp.mask)[1]
+        plot_data = np.ma.masked_where(mask, plot_data)
+
+    return plot_data, hatch_data
+
+
+def plot2(plot_data,
+          cmap='Spectral_r',
+          amap='RdBu_r',
+          ylabels=None,
+          titles=('DJF', 'MAM', 'JJA', 'SON', 'ANNUAL'),
+          suptitle=None,
+          cbar_label='',
+          abar_label='',
+          vmin=None,
+          vmax=None,
+          amin=None,
+          amax=None,
+          cbar_extend='neither',
+          abar_extend='neither',
+          stack_cbars=False,
+          map_obj=default_map,
+          anom_hatching=None):
+    """"""
+    ncols = 5
+    nrows = 3
+
+    # Make sure plot_data is the right size
+    assert(map_obj.xi.shape == map_obj.yi.shape)
+    assert(map_obj.xi.shape == plot_data.shape[2:])
+    assert(plot_data.shape[:2] == (nrows, ncols))
+
+    # set data ranges
+    if vmin is None:
+        vmin = plot_data[:2].min()
+    if vmax is None:
+        vmax = plot_data[:2].max()
+    if amin is None:
+        amin = plot_data[2].min()
+    if amax is None:
+        amax = plot_data[2].max()
+
+    # Set colorbar norms and ticks
+    assert(type(cmap) == str)
+    cn = 10
+    cmap = cmap_discretize(cmap, n_colors=cn)
+    cnorm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+    cticks = np.linspace(vmin, vmax, num=cn + 1)
+    assert(type(amap) == str)
+    an = 10
+    amap = cmap_discretize(amap, n_colors=an)
+    anorm = mpl.colors.Normalize(vmin=amin, vmax=amax)
+    aticks = np.linspace(amin, amax, num=an + 1)
+
+    if abar_label and not cbar_label:
+        cbar_label = abar_label
+
+    # Copy colormap and data ranges to iterables
+    cmaps = (cmap, cmap, amap)
+    vmins = (vmin, vmin, amin)
+    vmaxs = (vmax, vmax, amax)
+
+    # Make the plot
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(11, 5.5))
+    for (i, j), ax in np.ndenumerate(axes):
+        plt.sca(ax)
+        sub_plot_pcolor(plot_data[i, j],
+                        cmap=cmaps[i],
+                        cbar=None,
+                        vmin=vmins[i],
+                        vmax=vmaxs[i],
+                        map_obj=map_obj,
+                        ax=ax)
+        if i == 0 and titles is not None:
+            ax.set_title(titles[j])
+        if j == 0 and ylabels is not None:
+            ax.set_ylabel(ylabels[i])
+        if i == nrows - 1 and anom_hatching is not None:
+            map_obj.m.contourf(map_obj.xi, map_obj.yi,
+                               100 * (anom_hatching[j]),
+                               [0, 5],
+                               cmap=plt.get_cmap('gray'),
+                               hatches=['....', None],
+                               alpha=0,
+                               ax=ax)
+
+    # Add figure title
+    if suptitle is not None:
+        fig.suptitle(suptitle, fontsize=16, fontweight='roman', y=1.02)
+    plt.tight_layout()
+
+    # Color bars
+    if stack_cbars:
+        ax1 = fig.add_axes([0.995, 0.37, 0.015, 0.54])
+        cb1 = mpl.colorbar.ColorbarBase(ax1, cmap=cmap, norm=cnorm,
+                                        orientation='vertical',
+                                        extend=cbar_extend,
+                                        ticks=cticks)
+        ax2 = fig.add_axes([0.995, 0.08, 0.015, 0.23])
+        cb2 = mpl.colorbar.ColorbarBase(ax2, cmap=amap, norm=anorm,
+                                        orientation='vertical',
+                                        extend=abar_extend,
+                                        ticks=aticks,
+                                        extendfrac=0.12)
+        if cbar_label:
+            cb1.set_label(cbar_label, rotation=90)
+            cb2.set_label(abar_label, rotation=90)
+
+    else:
+        ax1 = fig.add_axes([0.995, 0.08, 0.015, 0.83])
+        cb1 = mpl.colorbar.ColorbarBase(ax1, cmap=cmap, norm=cnorm,
+                                        orientation='vertical',
+                                        extend=cbar_extend,
+                                        ticks=cticks)
+        ax2 = fig.add_axes([1.05, 0.08, 0.015, 0.83])
+        cb2 = mpl.colorbar.ColorbarBase(ax2, cmap=amap, norm=anorm,
+                                        orientation='vertical',
+                                        extend=abar_extend,
+                                        ticks=aticks)
+        if cbar_label:
+            cb1.set_label(cbar_label, y=0.005, labelpad=-10, rotation=0)
+        if abar_label:
+            cb2.set_label(abar_label, y=0.005, labelpad=-10, rotation=0)
+
+    return fig, axes
+
+
+def plot_n(monthly_means,
+           annual_means=False,
+           cmap='Spectral_r',
+           amap='RdBu_r',
+           vmin=None,
+           vmax=None,
+           amin=None,
+           amax=None,
+           map_obj=default_map,
+           cbar_label='',
+           abar_label='',
+           cbar_extend='neither',
+           abar_extend='neither',
+           mask=None):
+
+    ''''''
+
+    nrows = len(monthly_means)
+    if annual_means:
+        ncols = 5
+    else:
+        ncols = 4
+
+    width = 11
+    height = 1.55 * nrows + 0.6
+
+    # Set colorbar norms and ticks
+    assert(type(cmap) == str)
+    cn = 10
+    cmap = cmap_discretize(cmap, n_colors=cn)
+    cnorm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+    cticks = np.linspace(vmin, vmax, num=cn + 1)
+    assert(type(amap) == str)
+    an = 11
+    amap = cmap_discretize(amap, n_colors=an)
+    anorm = mpl.colors.Normalize(vmin=amin, vmax=amax)
+    aticks = np.linspace(amin, amax, num=an + 1)
+
+    if abar_label and not cbar_label:
+        cbar_label = abar_label
+
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(width, height),
+                             squeeze=False)
+
+    plt.subplots_adjust(left=0.125, bottom=0.05, right=0.9, top=0.9,
+                        wspace=0.05, hspace=0.05)
+
+    for i, (k, ds) in enumerate(monthly_means.items()):
+
+        if i == 0:
+            i0_ylabel = k
+            axes[i, 0].set_ylabel(i0_ylabel)
+            seas_mean0 = season_mean(ds)
+            for j, season in enumerate(seasons):
+                plt.sca(axes[i, j])
+                sub_plot_pcolor(
+                    np.ma.masked_where(
+                        mask, seas_mean0.sel(season=season).values.squeeze()),
+                    cmap=cmap,
+                    map_obj=map_obj,
+                    ax=axes[i, j],
+                    cbar=None,
+                    vmin=vmin,
+                    vmax=vmax)
+                axes[i, j].set_title(season)
+            if annual_means:
+                ann_mean0 = annual_mean(ds)
+                plt.sca(axes[i, 4])
+                sub_plot_pcolor(
+                    np.ma.masked_where(mask, ann_mean0.values.squeeze()),
+                    cmap=cmap,
+                    map_obj=map_obj,
+                    ax=axes[i, 4],
+                    cbar=None,
+                    vmin=vmin,
+                    vmax=vmax)
+                axes[i, 4].set_title('ANNUAL')
+        else:
+            axes[i, 0].set_ylabel('{0}\n — {1}'.format(i0_ylabel, k))
+            seas_meani = seas_mean0 - season_mean(ds)
+            for j, season in enumerate(seasons):
+                plt.sca(axes[i, j])
+                sub_plot_pcolor(
+                    np.ma.masked_where(
+                        mask, seas_meani.sel(season=season).values.squeeze()),
+                    cmap=amap,
+                    map_obj=map_obj,
+                    ax=axes[i, j],
+                    cbar=None,
+                    vmin=amin,
+                    vmax=amax)
+            if annual_means:
+                ann_meani = ann_mean0 - annual_mean(ds)
+                plt.sca(axes[i, 4])
+                sub_plot_pcolor(
+                    np.ma.masked_where(mask, ann_meani.values.squeeze()),
+                    cmap=amap,
+                    map_obj=map_obj,
+                    ax=axes[i, 4],
+                    cbar=None,
+                    vmin=amin,
+                    vmax=amax)
+
+    ax1 = fig.add_axes([0.05, 0.0, 0.44, 0.015])
+    cb1 = mpl.colorbar.ColorbarBase(ax1, cmap=cmap, norm=cnorm,
+                                    orientation='horizontal',
+                                    extend=cbar_extend,
+                                    ticks=cticks)
+    ax2 = fig.add_axes([0.55, 0.0, 0.44, 0.015])
+    cb2 = mpl.colorbar.ColorbarBase(ax2, cmap=amap, norm=anorm,
+                                    orientation='horizontal',
+                                    extend=abar_extend,
+                                    ticks=aticks)
+    if cbar_label:
+        cb1.set_label(cbar_label)
+    if abar_label:
+        cb2.set_label(abar_label)
+
+    plt.tight_layout(pad=.95)
+
+    return fig, axes
+
+
+def plot_percentile_and_mean(x, data, percentiles=(25, 75), ax=None,
+                             fill_kwargs={}, plot_kwargs={}):
+    """plot percentile and mean"""
+    if ax is None:
+        ax = plt.gca()
+    p1, p2 = np.nanpercentile(data, percentiles, axis=0)
+    ax.fill_between(x, p1, p2, **fill_kwargs)
+    ax.plot(x, np.nanmean(data, axis=0), **plot_kwargs)
 
 default_map = make_bmap()

@@ -1,6 +1,7 @@
 """calendar.py"""
 import datetime
 import numpy as np
+from netCDF4 import num2date, date2num
 
 HOURSPERDAY = 24
 SECSPERHOUR = 3600
@@ -197,3 +198,14 @@ def get_dpm(time, calendar='standard'):
         if month == 2 and leap_year(year, calendar=calendar):
             month_length[i] += 1
     return month_length
+
+
+def day_of_year(index, calendar, units='days since 0001-01-01'):
+    nc_dates = num2date(date2num(index.to_pydatetime(), units,
+                        calendar=calendar), units, calendar=calendar)
+    doy = np.array([d.timetuple()[-2] for d in nc_dates])
+    return doy
+
+
+def to_datetime(dates):
+    return [datetime(*d.timetuple()[:-3]) for d in dates]
