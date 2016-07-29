@@ -12,7 +12,7 @@ NCOFORMAT = "%Y-%m-%d %H:%M:%S"
 
 __GARNET_OPTS__ = {}
 
-__SPIRIT_OPTS__ = {'debug': True}
+__SPIRIT_OPTS__ = {}
 
 __HYDRA_OPTS__ = {'no_tmp_fl': True,
                   'debug': True}
