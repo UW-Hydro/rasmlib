@@ -235,7 +235,7 @@ def plot4_seasons(lons, lats, pannels, variables,
     ----------
     pannels : dict
         Dictionary of data pannels with a structure of
-        {pannel_number: xray.Dataset} to be accessed as
+        {pannel_number: xarray.Dataset} to be accessed as
         [pannel_number][variable][season, y, x].
     variables: str or list like
         Name of variable(s) to plot.

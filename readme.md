@@ -29,4 +29,4 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU General Public License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-rasmlib includes portions of pandas, matplotlib, xray, netCDF, and other projects. See those projects for licenses specific use policies related to their licesnses.
+rasmlib includes portions of pandas, matplotlib, xarray, netCDF, and other projects. See those projects for licenses specific use policies related to their licesnses.

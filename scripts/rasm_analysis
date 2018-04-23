@@ -53,7 +53,7 @@ for analysis_name, analysis_dict in config.iteritems():
     print("Using plugin {0}".format(plugin_name))
 
     # ----------------------------------------------------------------------- #
-    # Get dictionary of xray datasets
+    # Get dictionary of xarray datasets
     case_names = analysis_dict.pop('CASE_NAMES')
     if not isinstance(case_names, list):
         case_names = [case_names]
