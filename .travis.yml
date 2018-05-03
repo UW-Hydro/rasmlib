@@ -18,8 +18,7 @@ before_install:
 
 # Make Conda environment and install packages
 install: 
-  - conda create --yes --name=test-environment python=$TRAVIS_PYTHON_VERSION matplotlib basemap pandas numpy netCDF4 xarray -c conda-forge
-  - pip install nco 
+  - conda create --yes --name=test-environment python=$TRAVIS_PYTHON_VERSION matplotlib basemap pandas numpy netCDF4 xarray nco -c conda-forge
   - source activate test-environment
   - python setup.py install
 
