@@ -1,35 +1,26 @@
 language: python
 
 python:
-  - "2.6"
-  - "2.7"
-  - "3.3"
+  - "3.6"
 
+# Setup anaconda
 before_install:
   - sudo apt-get update
   - sudo apt-get install libnetcdf-dev nco
-
-install:
-  # Get anaconda
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "3.3" ]]; then
-      wget http://repo.continuum.io/anaconda3/Anaconda3-2.1.0-Linux-x86_64.sh -O anaconda.sh;
-    else
-      wget http://09c8d0b2229f813c1b93-c95ac804525aac4b6dba79b00b39d1d3.r79.cf1.rackcdn.com/Anaconda-2.1.0-Linux-x86_64.sh -O anaconda.sh;
-    fi
-  - bash anaconda.sh -b -p $HOME/anaconda
-  - export PATH="$HOME/anaconda/bin:$PATH"
+  - wget http://repo.continuum.io/miniconda/Miniconda3-3.16.0-Linux-x86_64.sh -O miniconda.sh;
+  - bash anaconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   # Useful for debugging any issues with conda
   - conda info -a
 
-  # Make Conda test environment
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
+# Make Conda environment and install packages
+install: 
+  - conda create --yes --name=test-environment python=$TRAVIS_PYTHON_VERSION matplotlib basemap pandas numpy netCDF4 xarray -c conda-forge
+  - pip install nco 
   - source activate test-environment
-  - conda install matplotlib basemap pandas numpy netCDF4
-  - conda update pandas netcdf4
-  - pip install xray nco
   - python setup.py install
 
 # command to run tests
