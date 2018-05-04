@@ -25,4 +25,3 @@ install:
 # command to run tests
 script:
   - rasm_post_process -h
-  - py.test
