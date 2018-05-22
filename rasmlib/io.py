@@ -1,7 +1,7 @@
 """io.py"""
 import os
 from collections import OrderedDict
-import xray
+import xarray as xr
 try:
     from ConfigParser import SafeConfigParser
 except ImportError:
@@ -166,7 +166,7 @@ def make_tarfile(output_filename, source_dir, mode="w:gz"):
 
 def get_datasets(names, files, variables, analysis_vars, timestep):
     """
-    Parse the files and variables namelists and load the files into xray
+    Parse the files and variables namelists and load the files into xarray
     objects.
     """
     datasets = OrderedDict()
@@ -190,7 +190,7 @@ def get_datasets(names, files, variables, analysis_vars, timestep):
         dataset_class = f['DATASET_CLASS'].values[0]
 
         # read the dataset
-        ds = xray.open_dataset(file_path)
+        ds = xr.open_dataset(file_path)
 
         # adjust units and var names
         for var in analysis_vars:
@@ -223,7 +223,7 @@ def get_datasets(names, files, variables, analysis_vars, timestep):
 
 
 def read_domain(filepath):
-    """read a CESM domain file and return a xray dataset
+    """read a CESM domain file and return an xarray dataset
 
     Parameters
     ----------
@@ -232,13 +232,13 @@ def read_domain(filepath):
 
     Returns
     ----------
-    domain : xray.Dataset
+    domain : xarray.Dataset
         Dataset with domain variables.
     """
 
     re = 6.37122e6
 
-    domain = xray.open_dataset(filepath)
+    domain = xr.open_dataset(filepath)
     domain['xc'] = domain['xc'].rename('lon')
     domain['yc'] = domain['yc'].rename('lat')
     domain['area'] *= re * re  # area in m2

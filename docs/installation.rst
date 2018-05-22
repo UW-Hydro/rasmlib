@@ -14,7 +14,7 @@ analysis module dependencies:
   - numpy_ : Fundamental package needed for scientific computing with Python.
   - scipy_: Open-source software for mathematics, science, and engineering.
   - pandas_ : Flexible and powerful data analysis / manipulation library for Python.
-  - xray_ :  N-D labeled arrays and datasets in Python.
+  - xarray_ :  N-D labeled arrays and datasets in Python.
   - matplotlib basemap_ : The matplotlib basemap toolkit is a library for plotting 2D data on maps in Python.
   - seaborn_ : Statistical data visualization using matplotlib.
 
@@ -34,7 +34,7 @@ To install `rasmlib`, use `setuptools`:
 .. _numpy: http://www.numpy.org/
 .. _scipy: http://docs.scipy.org/doc/
 .. _pandas: http://pandas.pydata.org/
-.. _xray: http://xray.readthedocs.org/en/stable/index.html
+.. _xarray: http://xray.readthedocs.org/en/stable/index.html
 .. _basemap: http://matplotlib.org/basemap/index.html
 .. _seaborn: http://web.stanford.edu/~mwaskom/software/seaborn/index.html
 .. _nco: http://nco.sourceforge.net/
